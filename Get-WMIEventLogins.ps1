@@ -16,6 +16,10 @@ Will get remote login details from event log on remote hosts.
 This can be used to find out where people are logging in from or
 to find jump boxes.
 
+Side note: It's smarter to use get-eventlog because we can set a -max events
+which wil make this dramatically faster for certain systems at scale.
+However, our tool right now claims ALL WMI so this version uses WMI
+
 .PARAMETER Targets
 
 List of targets. Will accept value from pipe.

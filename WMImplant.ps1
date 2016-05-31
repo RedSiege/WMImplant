@@ -964,7 +964,7 @@ function Invoke-CommandGeneration
             }
         }
 
-        "rdp_logins"
+        "logon_events"
         {
             $GenReadFile = Read-Host "Do you want to display important output to console? [y/n] >"
             $GenReadFile = $GenReadFile.Trim().ToLower()
@@ -978,13 +978,13 @@ function Invoke-CommandGeneration
                 {
                     if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
                     {
-                        $Command = "`nInvoke-WMImplant -command rdp_logins -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword -Read $GenReadFile -LocalFile $GenFileSave`n"
+                        $Command = "`nInvoke-WMImplant -command logon_events -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword -Read $GenReadFile -LocalFile $GenFileSave`n"
                         $Command
                     }
 
                     else
                     {
-                        $Command = "`nInvoke-WMImplant -command rdp_logins -Target $GenTarget -Read $GenReadFile -LocalFile $GenFileSave`n"
+                        $Command = "`nInvoke-WMImplant -command logon_events -Target $GenTarget -Read $GenReadFile -LocalFile $GenFileSave`n"
                         $Command
                     }
                 }
@@ -993,13 +993,13 @@ function Invoke-CommandGeneration
                 {
                     if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
                     {
-                        $Command = "`nInvoke-WMImplant -command rdp_logins -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword -LocalFile $GenFileSave -Read $GenReadFile`n"
+                        $Command = "`nInvoke-WMImplant -command logon_events -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword -LocalFile $GenFileSave -Read $GenReadFile`n"
                         $Command
                     }
 
                     else
                     {
-                        $Command = "`nInvoke-WMImplant -command rdp_logins -Target $GenTarget -LocalFile $GenFileSave -Read $GenReadFile`n"
+                        $Command = "`nInvoke-WMImplant -command logon_events -Target $GenTarget -LocalFile $GenFileSave -Read $GenReadFile`n"
                         $Command
                     }
                 }
@@ -2560,7 +2560,7 @@ function Invoke-WMImplant
                     }
                 }
 
-                "rdp_logins"
+                "logon_events"
                 {
                     if(!$Target)
                     {
@@ -2730,7 +2730,7 @@ function Show-WMImplantMainMenu
     $menu_options += "drive_list - List local and network drives`n"
     $menu_options += "ifconfig - IP information for NICs with IP addresses`n"
     $menu_options += "installed_programs - Receive a list of all programs installed`n"
-    $menu_options += "rdp_logins - Identify users that have logged into the system`n"
+    $menu_options += "logon_events - Identify users that have logged into the system`n"
     $menu_options += "logoff - Logs users off the specified system`n"
     $menu_options += "reboot - Reboot a system`n"
     $menu_options += "power_off - Power off a system`n"
@@ -2997,7 +2997,7 @@ function Use-MenuSelection
                 }
             }
 
-            "rdp_logins"
+            "logon_events"
             {
                 if($Credential)
                 {

@@ -299,6 +299,86 @@ function Get-ProcessListingWMImplant
     }
 }
 
+function Get-WMIEventLogins
+{
+<#
+.DESCRIPTION
+Will get remote login details from event log on remote hosts.
+This can be used to find out where people are logging in from or
+to find jump boxes.
+
+.PARAMETER Targets
+List of targets. Will accept value from pipe.
+
+.PARAMETER User
+Username to connect to remote host
+
+.PARAMETER Pass
+Password to connect to remote host
+
+.PARAMETER FileName
+Path to save output to
+
+.PARAMETER Read
+If present, will display results to the console
+#>
+    
+    Param
+    (
+        # Parameter Assignment
+        [Parameter(Mandatory = $False)]
+        [System.Management.Automation.PSCredential]$Creds,
+        [Parameter(Mandatory = $False)]
+        [string]$Target,
+        [Parameter(Mandatory = $False)]
+        [string]$FileName,
+        [Parameter(Mandatory = $False)]
+        [string]$Read
+    )
+
+    Process {
+
+        if(!$Target)
+        {
+            $Target = Read-Host "What system are you targeting? >"
+            $Target = $Target.Trim()
+        }
+
+        if(!$FileName)
+        {
+            $FileName = Read-Host "Where would you like the output saved to? >"
+        }
+
+        if(!$Read)
+        {
+            $Read = Read-Host "Would you like the output displayed to the console? [y/n] >"
+            $Read = $Read.Trim().ToLower()
+        }
+
+        Write-Verbose "Connecting to $Target"
+
+        if($Creds)
+        {
+            $temp = Get-WmiObject -computername $Target -Credential $Creds -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+10" | Select-String "Logon Process:\s+NtlmSsp"} | Out-File -Encoding ASCII -FilePath $FileName
+            
+            if(($Read -eq "yes") -or ($Read -eq "y"))
+            {
+                gc $FileName | select message | Format-Table -Wrap | Select-String -pattern "workstation name", "account name"
+            }
+        }
+
+        else
+        {
+            $temp = Get-WmiObject -computername $Target -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+10" | Select-String "Logon Process:\s+NtlmSsp"} | Out-File -Encoding ASCII -FilePath $FileName
+            
+            if(($Read -eq "yes") -or ($Read -eq "y"))
+            {
+                gc $FileName | select message | Format-Table -Wrap | Select-String -pattern "workstation name", "account name"
+            }
+        }
+    }
+}
+
 function Invoke-CommandExecution
 {
     param
@@ -306,9 +386,9 @@ function Invoke-CommandExecution
         #Parameter assignment
         [Parameter(Mandatory = $False)]
         [System.Management.Automation.PSCredential]$Creds,
-        [Parameter(Mandatory = $False)] 
+        [Parameter(Mandatory = $False)]
         [string]$Target,
-        [Parameter(Mandatory = $False)] 
+        [Parameter(Mandatory = $False)]
         [string]$ExecCommand
     )
 
@@ -881,6 +961,48 @@ function Invoke-CommandGeneration
             {
                 $Command = "`nInvoke-WMImplant -command installed_programs -Target $GenTarget`n"
                 $Command
+            }
+        }
+
+        "rdp_logins"
+        {
+            $GenReadFile = Read-Host "Do you want to display important output to console? [y/n] >"
+            $GenReadFile = $GenReadFile.Trim().ToLower()
+
+            $GenFileSave = Read-Host "What's the full path to where you'd like the output saved? >"
+            $GenFileSave = $GenFileSave.Trim().ToLower()
+
+            switch($GenReadFile)
+            {
+                "yes"
+                {
+                    if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
+                    {
+                        $Command = "`nInvoke-WMImplant -command rdp_logins -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword -Read $GenReadFile -LocalFile $GenFileSave`n"
+                        $Command
+                    }
+
+                    else
+                    {
+                        $Command = "`nInvoke-WMImplant -command rdp_logins -Target $GenTarget -Read $GenReadFile -LocalFile $GenFileSave`n"
+                        $Command
+                    }
+                }
+
+                "no"
+                {
+                    if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
+                    {
+                        $Command = "`nInvoke-WMImplant -command rdp_logins -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword -LocalFile $GenFileSave -Read $GenReadFile`n"
+                        $Command
+                    }
+
+                    else
+                    {
+                        $Command = "`nInvoke-WMImplant -command rdp_logins -Target $GenTarget -LocalFile $GenFileSave -Read $GenReadFile`n"
+                        $Command
+                    }
+                }
             }
         }
 
@@ -1679,6 +1801,10 @@ function Invoke-WMImplant
 
     .PARAMETER RegData
     This parameter contains the data that's added to a registry value when it is created.
+
+    .PARAMETER Read
+    This parameter is used to read file contents for functions that support this use.
+
     .EXAMPLE
     > Invoke-WMImplant
     This will run the main menu and allow for easy interaction
@@ -1834,7 +1960,9 @@ function Invoke-WMImplant
         [Parameter(Mandatory = $False)] 
         [string]$RegData,
         [Parameter(Mandatory = $False)] 
-        [string]$RemoteCommand
+        [string]$RemoteCommand,
+        [Parameter(Mandatory = $False)] 
+        [string]$Read
     )
 
     Process
@@ -2432,6 +2560,50 @@ function Invoke-WMImplant
                     }
                 }
 
+                "rdp_logins"
+                {
+                    if(!$Target)
+                    {
+                        Throw "You need to specify a target to run the command against!"
+                    }
+
+                    if(!LocalFile)
+                    {
+                        Throw "You need to specify the path to where you'd like the file saved with LocalFile!"
+                    }
+
+                    if(!Read)
+                    {
+                        Throw "Please specify if you'd like the important contents displayed to the console [y/n]!"
+                    }
+
+                    if($Read)
+                    {
+                        if($RemoteCredential)
+                        {
+                            Get-WMIEventLogins -Creds $RemoteCredential -Target $Target -FileName $LocalFile -Read y
+                        }
+
+                        else
+                        {
+                            Get-WMIEventLogins -Target $Target -FileName $LocalFile -Read y
+                        }
+                    }
+
+                    else
+                    {
+                        if($RemoteCredential)
+                        {
+                            Get-WMIEventLogins -Creds $RemoteCredential -Target $Target -FileName $LocalFile -Read n
+                        }
+
+                        else
+                        {
+                            Get-WMIEventLogins -Target $Target -FileName $LocalFile -Read n
+                        }
+                    }
+                }
+
                 "logoff"
                 {
                     if(!$Target)
@@ -2558,6 +2730,7 @@ function Show-WMImplantMainMenu
     $menu_options += "drive_list - List local and network drives`n"
     $menu_options += "ifconfig - IP information for NICs with IP addresses`n"
     $menu_options += "installed_programs - Receive a list of all programs installed`n"
+    $menu_options += "rdp_logins - Identify users that have logged into the system`n"
     $menu_options += "logoff - Logs users off the specified system`n"
     $menu_options += "reboot - Reboot a system`n"
     $menu_options += "power_off - Power off a system`n"
@@ -2822,6 +2995,20 @@ function Use-MenuSelection
                 {
                     Get-InstalledPrograms
                 }
+            }
+
+            "rdp_logins"
+            {
+                if($Credential)
+                {
+                    Get-WMIEventLogins -Creds $Credential
+                }
+
+                else
+                {
+                    Get-WMIEventLogins
+                }
+
             }
 
             "logoff"

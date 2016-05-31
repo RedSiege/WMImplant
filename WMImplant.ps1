@@ -363,7 +363,7 @@ If present, will display results to the console
             
             if(($Read -eq "yes") -or ($Read -eq "y"))
             {
-                gc $FileName | select message | Format-Table -Wrap | Select-String -pattern "workstation name", "account name"
+                gc $FileName | Select-String -pattern '(Workstation Name:)|(Account Name:)'
             }
         }
 
@@ -373,7 +373,7 @@ If present, will display results to the console
             
             if(($Read -eq "yes") -or ($Read -eq "y"))
             {
-                gc $FileName | select message | Format-Table -Wrap | Select-String -pattern "workstation name", "account name"
+                gc $FileName | Select-String -pattern '(Workstation Name:)|(Account Name:)'
             }
         }
     }
@@ -970,11 +970,11 @@ function Invoke-CommandGeneration
             $GenReadFile = $GenReadFile.Trim().ToLower()
 
             $GenFileSave = Read-Host "What's the full path to where you'd like the output saved? >"
-            $GenFileSave = $GenFileSave.Trim().ToLower()
+            $GenFileSave = $GenFileSave.Trim()
 
             switch($GenReadFile)
             {
-                "yes"
+                "y"
                 {
                     if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
                     {
@@ -989,7 +989,7 @@ function Invoke-CommandGeneration
                     }
                 }
 
-                "no"
+                "n"
                 {
                     if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
                     {
@@ -2577,7 +2577,7 @@ function Invoke-WMImplant
                         Throw "Please specify if you'd like the important contents displayed to the console [y/n]!"
                     }
 
-                    if($Read)
+                    if(($Read -eq "yes") -or ($Read -eq "y"))
                     {
                         if($RemoteCredential)
                         {

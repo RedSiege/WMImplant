@@ -359,7 +359,7 @@ If present, will display results to the console
 
         if($Creds)
         {
-            $temp = Get-WmiObject -computername $Target -Credential $Creds -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+10" | Select-String "Logon Process:\s+NtlmSsp"} | Out-File -Encoding ASCII -FilePath $FileName
+            $temp = Get-WmiObject -computername $Target -Credential $Creds -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+3" | Select-String "Logon Process:\s+NtlmSsp"} | Out-File -Encoding ASCII -FilePath $FileName
             
             if(($Read -eq "yes") -or ($Read -eq "y"))
             {
@@ -369,7 +369,7 @@ If present, will display results to the console
 
         else
         {
-            $temp = Get-WmiObject -computername $Target -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+10" | Select-String "Logon Process:\s+NtlmSsp"} | Out-File -Encoding ASCII -FilePath $FileName
+            $temp = Get-WmiObject -computername $Target -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+3" | Select-String "Logon Process:\s+NtlmSsp"} | Out-File -Encoding ASCII -FilePath $FileName
             
             if(($Read -eq "yes") -or ($Read -eq "y"))
             {

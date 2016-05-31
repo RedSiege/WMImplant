@@ -2567,12 +2567,12 @@ function Invoke-WMImplant
                         Throw "You need to specify a target to run the command against!"
                     }
 
-                    if(!LocalFile)
+                    if(!$LocalFile)
                     {
                         Throw "You need to specify the path to where you'd like the file saved with LocalFile!"
                     }
 
-                    if(!Read)
+                    if(!$Read)
                     {
                         Throw "Please specify if you'd like the important contents displayed to the console [y/n]!"
                     }

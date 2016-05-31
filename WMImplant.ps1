@@ -299,6 +299,71 @@ function Get-ProcessListingWMImplant
     }
 }
 
+function Get-WMIEventLogins
+{
+<#
+.SYNOPSIS
+
+Creates an LDAP Session
+
+Author: Evan Peña
+License: GPLv3
+Required Dependencies: Local Admin Account on Target
+Optional Dependencies: None
+ 
+.DESCRIPTION
+
+Will get remote login details from event log on remote hosts.
+This can be used to find out where people are logging in from or
+to find jump boxes.
+
+.PARAMETER Targets
+
+List of targets. Will accept value from pipe.
+
+.PARAMETER User
+
+Username to connect to remote host
+
+.PARAMETER Pass
+
+Password to connect to remote host
+#>
+    
+    Param
+       (
+
+        # Parameter Assignment
+        [Parameter(Mandatory = $False)]
+        [System.Management.Automation.PSCredential]$Creds,
+        [Parameter(Mandatory = $False)]
+        [string]$Target 
+        )
+
+    Process {
+
+        if(!$Target)
+        {
+            $Target = Read-Host "What system are you targeting? >"
+            $Target = $Target.Trim()
+        }
+
+        Write-Verbose "Connecting to $Target"
+
+        if($Creds)
+        {
+            $temp = Get-WmiObject -computername $computer -Credential $Creds -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+3" | Select-String "Logon Process:\s+NtlmSsp"}                
+            $temp = $temp | select message | Format-Table -Wrap | Select-String -pattern "workstation name", "account name"
+        }
+
+        else
+        {
+            $temp = Get-WmiObject -computername $computer -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+3" | Select-String "Logon Process:\s+NtlmSsp"}                
+            $temp = $temp | select message | Format-Table -Wrap | Select-String -pattern "workstation name", "account name"
+        }
+    }
+}
+
 function Invoke-CommandExecution
 {
     param
@@ -306,9 +371,9 @@ function Invoke-CommandExecution
         #Parameter assignment
         [Parameter(Mandatory = $False)]
         [System.Management.Automation.PSCredential]$Creds,
-        [Parameter(Mandatory = $False)] 
+        [Parameter(Mandatory = $False)]
         [string]$Target,
-        [Parameter(Mandatory = $False)] 
+        [Parameter(Mandatory = $False)]
         [string]$ExecCommand
     )
 
@@ -880,6 +945,21 @@ function Invoke-CommandGeneration
             else
             {
                 $Command = "`nInvoke-WMImplant -command installed_programs -Target $GenTarget`n"
+                $Command
+            }
+        }
+
+        "logon_events"
+        {
+            if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
+            {
+                $Command = "`nInvoke-WMImplant -command logon_events -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
+                $Command
+            }
+
+            else
+            {
+                $Command = "`nInvoke-WMImplant -command logon_events -Target $GenTarget`n"
                 $Command
             }
         }
@@ -2432,6 +2512,24 @@ function Invoke-WMImplant
                     }
                 }
 
+                "logon_events"
+                {
+                    if(!$Target)
+                    {
+                        Throw "You need to specify a target to run the command against!"
+                    }
+
+                    if($RemoteCredential)
+                    {
+                        Get-WMIEventLogins -Creds $RemoteCredential -Target $Target
+                    }
+
+                    else
+                    {
+                        Get-WMIEventLogins -Target $Target
+                    }
+                }
+
                 "logoff"
                 {
                     if(!$Target)
@@ -2558,6 +2656,7 @@ function Show-WMImplantMainMenu
     $menu_options += "drive_list - List local and network drives`n"
     $menu_options += "ifconfig - IP information for NICs with IP addresses`n"
     $menu_options += "installed_programs - Receive a list of all programs installed`n"
+    $menu_options += "logon_events - Identify users that have logged into the system`n"
     $menu_options += "logoff - Logs users off the specified system`n"
     $menu_options += "reboot - Reboot a system`n"
     $menu_options += "power_off - Power off a system`n"
@@ -2822,6 +2921,20 @@ function Use-MenuSelection
                 {
                     Get-InstalledPrograms
                 }
+            }
+
+            "logon_events"
+            {
+                if($Credential)
+                {
+                    Get-WMIEventLogins - Creds $Credential
+                }
+
+                else
+                {
+                    Get-WMIEventLogins
+                }
+
             }
 
             "logoff"

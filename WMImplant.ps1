@@ -352,13 +352,13 @@ Password to connect to remote host
 
         if($Creds)
         {
-            $temp = Get-WmiObject -computername $computer -Credential $Creds -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+3" | Select-String "Logon Process:\s+NtlmSsp"}                
+            $temp = Get-WmiObject -computername $Target -Credential $Creds -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+3" | Select-String "Logon Process:\s+NtlmSsp"}                
             $temp = $temp | select message | Format-Table -Wrap | Select-String -pattern "workstation name", "account name"
         }
 
         else
         {
-            $temp = Get-WmiObject -computername $computer -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+3" | Select-String "Logon Process:\s+NtlmSsp"}                
+            $temp = Get-WmiObject -computername $Target -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+3" | Select-String "Logon Process:\s+NtlmSsp"}                
             $temp = $temp | select message | Format-Table -Wrap | Select-String -pattern "workstation name", "account name"
         }
     }

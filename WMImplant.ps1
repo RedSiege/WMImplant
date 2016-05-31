@@ -2730,11 +2730,14 @@ function Show-WMImplantMainMenu
     $menu_options += "drive_list - List local and network drives`n"
     $menu_options += "ifconfig - IP information for NICs with IP addresses`n"
     $menu_options += "installed_programs - Receive a list of all programs installed`n"
-    $menu_options += "logon_events - Identify users that have logged into the system`n"
     $menu_options += "logoff - Logs users off the specified system`n"
     $menu_options += "reboot - Reboot a system`n"
     $menu_options += "power_off - Power off a system`n"
     $menu_options += "vacant_system - Determine if a user is away from the system.`n`n"
+
+    $menu_options += "Log Operations`n"
+    $menu_options += "====================================================================`n"
+    $menu_options += "logon_events - Identify users that have logged into a system`n`n"
 
     # Print the menu out to the user
     $menu_options

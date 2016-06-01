@@ -359,21 +359,22 @@ If present, will display results to the console
 
         if($Creds)
         {
-            $temp = Get-WmiObject -computername $Target -Credential $Creds -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+3" | Select-String "Logon Process:\s+NtlmSsp"} | Out-File -Encoding ASCII -FilePath $FileName
+            #$temp = Get-WmiObject -computername $Target -Credential $Creds -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+3" | Select-String "Logon Process:\s+NtlmSsp"} | Out-File -Encoding ASCII -FilePath $FileName
+            $temp = Get-WmiObject -computername $Target -Credential $Creds -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+10" | Select-String "Logon Process:\s+User32"} | Out-File -Encoding ASCII -FilePath $FileName
             
             if(($Read -eq "yes") -or ($Read -eq "y"))
             {
-                gc $FileName | Select-String -pattern '(Workstation Name:)|(Account Name:)'
+                gc $FileName | Select-String -pattern "workstation name", "account name"
             }
         }
 
         else
         {
-            $temp = Get-WmiObject -computername $Target -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+3" | Select-String "Logon Process:\s+NtlmSsp"} | Out-File -Encoding ASCII -FilePath $FileName
+            $temp = Get-WmiObject -computername $Target -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+10" | Select-String "Logon Process:\s+User32"} | Out-File -Encoding ASCII -FilePath $FileName
             
             if(($Read -eq "yes") -or ($Read -eq "y"))
             {
-                gc $FileName | Select-String -pattern '(Workstation Name:)|(Account Name:)'
+                gc $FileName | Select-String -pattern "workstation name", "account name"
             }
         }
     }
@@ -970,11 +971,11 @@ function Invoke-CommandGeneration
             $GenReadFile = $GenReadFile.Trim().ToLower()
 
             $GenFileSave = Read-Host "What's the full path to where you'd like the output saved? >"
-            $GenFileSave = $GenFileSave.Trim()
+            $GenFileSave = $GenFileSave.Trim().ToLower()
 
             switch($GenReadFile)
             {
-                "y"
+                "yes"
                 {
                     if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
                     {
@@ -989,7 +990,7 @@ function Invoke-CommandGeneration
                     }
                 }
 
-                "n"
+                "no"
                 {
                     if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
                     {
@@ -2577,7 +2578,7 @@ function Invoke-WMImplant
                         Throw "Please specify if you'd like the important contents displayed to the console [y/n]!"
                     }
 
-                    if(($Read -eq "yes") -or ($Read -eq "y"))
+                    if($Read)
                     {
                         if($RemoteCredential)
                         {

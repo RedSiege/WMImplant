@@ -60,7 +60,7 @@ gc hosts | Get-WMIEventLogins -User foo -bar password
 
             Foreach($computer in $TARGETS)
             {
-                $temp = Get-WmiObject -computername $computer -Credential $cred -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+3" | Select-String "Logon Process:\s+NtlmSsp"}                
+                $temp = Get-WmiObject -computername $computer -Credential $cred -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+3" | Select-String "Logon Process:\s+NtlmSsp"}
                 $temp | select message | Format-Table -Wrap | Out-File test.txt
                 gc temp\$computer.txt | Select-String -pattern "workstation name", "account name"
             }

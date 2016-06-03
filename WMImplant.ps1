@@ -318,9 +318,6 @@ Password to connect to remote host
 
 .PARAMETER FileName
 Path to save output to
-
-.PARAMETER Read
-If present, will display results to the console
 #>
     
     Param
@@ -331,9 +328,7 @@ If present, will display results to the console
         [Parameter(Mandatory = $False)]
         [string]$Target,
         [Parameter(Mandatory = $False)]
-        [string]$FileName,
-        [Parameter(Mandatory = $False)]
-        [string]$Read
+        [string]$FileName
     )
 
     Process {
@@ -344,29 +339,40 @@ If present, will display results to the console
             $Target = $Target.Trim()
         }
 
-        if(!$FileName)
-        {
-            $FileName = Read-Host "Where would you like the output saved to? >"
-        }
-
         Write-Verbose "Connecting to $Target"
 
         if($Creds)
         {
             $temp = Get-WmiObject -Credential $Creds -computername $Target -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+10" | Select-String "Logon Process:\s+User32"}
-            foreach ($line in $temp)
-            {
-                $line.Message -split '[\r\n]' | Select-String -pattern "workstation name:", "account name:"
-            }
         }
 
         else
         {
             $temp = Get-WmiObject -computername $Target -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+10" | Select-String "Logon Process:\s+User32"}
-            foreach ($line in $temp)
-            {
-                $line.Message -split '[\r\n]' | Select-String -pattern "workstation name:", "account name:"
-            }
+        }
+
+        $temp2 = @()
+        ForEach ($line in $temp)
+        {
+            $temp2 = $line.Message -split '[\r\n]' | Select-String -pattern "workstation name:", "account name:", "source network address:"
+        }
+
+        $result = $temp2 | Select-String -pattern "workstation name:", "account name:", "source network address:"; 
+
+        $finalResult = @(); 
+        For($i=0; $i -lt $result.Count; $i+=4) { 
+            $accountName = ([string]($result[$i+1])).Split(":")[1].Trim(); 
+            $workstationName = ([string]($result[$i+2])).Split(":")[1].Trim(); 
+            $sourceAddress = ([string]($result[$i+3])).Split(":")[1].Trim(); 
+            $keyPair = "$accountName,$workstationName,$sourceAddress"; 
+            $finalResult += $keyPair 
+        }
+        Write-Output "User Account, System Connecting To, System Connecting From"
+        $finalResult | Sort-Object -Unique
+
+        if($FileName)
+        {
+            $temp | Out-File -Encoding ASCII -FilePath $FileName
         }
     }
 }
@@ -958,40 +964,41 @@ function Invoke-CommandGeneration
 
         "logon_events"
         {
-            $GenReadFile = Read-Host "Do you want to display important output to console? [y/n] >"
-            $GenReadFile = $GenReadFile.Trim().ToLower()
+            $GenSaveFile = Read-Host "Do you want to save the log output to a file? [yes/no] >"
+            $GenSaveFile = $GenSaveFile.Trim().ToLower()
 
-            $GenFileSave = Read-Host "What's the full path to where you'd like the output saved? >"
-            $GenFileSave = $GenFileSave.Trim().ToLower()
-
-            switch($GenReadFile)
+            switch($GenSaveFile)
             {
                 "yes"
                 {
+                    $GenFileSave = Read-Host "What's the full path to where you'd like the output saved? >"
+                    $GenFileSave = $GenFileSave.Trim()
+
                     if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
                     {
-                        $Command = "`nInvoke-WMImplant -command logon_events -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword -Read $GenReadFile -LocalFile $GenFileSave`n"
+                        $Command = "`nInvoke-WMImplant -command logon_events -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword -LocalFile $GenFileSave`n"
                         $Command
                     }
 
                     else
                     {
-                        $Command = "`nInvoke-WMImplant -command logon_events -Target $GenTarget -Read $GenReadFile -LocalFile $GenFileSave`n"
+                        $Command = "`nInvoke-WMImplant -command logon_events -Target $GenTarget -LocalFile $GenFileSave`n"
                         $Command
                     }
                 }
 
-                "no"
+                default
                 {
+                    Write-Host "In here"
                     if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
                     {
-                        $Command = "`nInvoke-WMImplant -command logon_events -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword -LocalFile $GenFileSave -Read $GenReadFile`n"
+                        $Command = "`nInvoke-WMImplant -command logon_events -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
                         $Command
                     }
 
                     else
                     {
-                        $Command = "`nInvoke-WMImplant -command logon_events -Target $GenTarget -LocalFile $GenFileSave -Read $GenReadFile`n"
+                        $Command = "`nInvoke-WMImplant -command logon_events -Target $GenTarget`n"
                         $Command
                     }
                 }
@@ -2559,26 +2566,16 @@ function Invoke-WMImplant
                         Throw "You need to specify a target to run the command against!"
                     }
 
-                    if(!$LocalFile)
-                    {
-                        Throw "You need to specify the path to where you'd like the file saved with LocalFile!"
-                    }
-
-                    if(!$Read)
-                    {
-                        Throw "Please specify if you'd like the important contents displayed to the console [y/n]!"
-                    }
-
-                    if($Read)
+                    if($LocalFile)
                     {
                         if($RemoteCredential)
                         {
-                            Get-WMIEventLogins -Creds $RemoteCredential -Target $Target -FileName $LocalFile -Read y
+                            Get-WMIEventLogins -Creds $RemoteCredential -Target $Target -FileName $LocalFile
                         }
 
                         else
                         {
-                            Get-WMIEventLogins -Target $Target -FileName $LocalFile -Read y
+                            Get-WMIEventLogins -Target $Target -FileName $LocalFile
                         }
                     }
 
@@ -2586,12 +2583,12 @@ function Invoke-WMImplant
                     {
                         if($RemoteCredential)
                         {
-                            Get-WMIEventLogins -Creds $RemoteCredential -Target $Target -FileName $LocalFile -Read n
+                            Get-WMIEventLogins -Creds $RemoteCredential -Target $Target
                         }
 
                         else
                         {
-                            Get-WMIEventLogins -Target $Target -FileName $LocalFile -Read n
+                            Get-WMIEventLogins -Target $Target
                         }
                     }
                 }
@@ -2994,16 +2991,37 @@ function Use-MenuSelection
 
             "logon_events"
             {
-                if($Credential)
+                $FileSave = Read-Host "Do you want to save the log information to a file? [yes/no] >"
+                $FileSave = $FileSave.Trim().ToLower()
+
+                if(($FileSave -eq "y") -or ($FileSave -eq "yes"))
                 {
-                    Get-WMIEventLogins -Creds $Credential
+                    $FileSavePath = Read-Host "What is the full path to where the file should be saved? >"
+                    $FileSavePath = $FileSavePath.Trim()
+
+                    if($Credential)
+                    {
+                        Get-WMIEventLogins -Creds $Credential -FileName $FileSavePath
+                    }
+
+                    else
+                    {
+                        Get-WMIEventLogins -FileName $FileSavePath
+                    }
                 }
 
                 else
                 {
-                    Get-WMIEventLogins
-                }
+                    if($Credential)
+                    {
+                        Get-WMIEventLogins -Creds $Credential
+                    }
 
+                    else
+                    {
+                        Get-WMIEventLogins
+                    }
+                }
             }
 
             "logoff"

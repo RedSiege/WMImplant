@@ -1801,9 +1801,6 @@ function Invoke-WMImplant
     .PARAMETER RegData
     This parameter contains the data that's added to a registry value when it is created.
 
-    .PARAMETER Read
-    This parameter is used to read file contents for functions that support this use.
-
     .EXAMPLE
     > Invoke-WMImplant
     This will run the main menu and allow for easy interaction
@@ -1959,9 +1956,7 @@ function Invoke-WMImplant
         [Parameter(Mandatory = $False)] 
         [string]$RegData,
         [Parameter(Mandatory = $False)] 
-        [string]$RemoteCommand,
-        [Parameter(Mandatory = $False)] 
-        [string]$Read
+        [string]$RemoteCommand
     )
 
     Process

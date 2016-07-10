@@ -852,7 +852,7 @@ function Invoke-CommandGeneration
             }
         }
 
-        "wigest"
+        "wdigest"
         {
             if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
             {

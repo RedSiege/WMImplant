@@ -1539,11 +1539,11 @@ function Invoke-RegValueMod
                 {
                     if($RegValue -eq "UseLogonCredential")
                     {
-                        Invoke-WmiMethod -Class StdRegProv -Name SetDWORDValue -ArgumentList $hivevalue, $RegKey, $RegData, $RegValue -ComputerName $Target -Credential $Creds
+                        Invoke-WmiMethod -Class StdRegProv -Name SetDWORDValue -ArgumentList @($hivevalue, $RegKey, $RegValue, 1) -ComputerName $Target -Credential $Creds
                     }
                     else
                     {
-                        Invoke-WmiMethod -Class StdRegProv -Name SetStringValue -ArgumentList $hivevalue, $RegKey, $RegData, $RegValue -ComputerName $Target -Credential $Creds
+                        Invoke-WmiMethod -Class StdRegProv -Name SetStringValue -ArgmuentList $hivevalue, $RegKey, $RegData, $RegValue -ComputerName $Target -Credential $Creds
                     }
                 }
 
@@ -1551,7 +1551,7 @@ function Invoke-RegValueMod
                 {
                     if($RegValue -eq "UseLogonCredential")
                     {
-                        Invoke-WmiMethod -Class StdRegProv -Name SetDWORDValue -ArgumentList $hivevalue, $RegKey, $RegData, $RegValue -ComputerName $Target
+                        Invoke-WmiMethod -Class StdRegProv -Name SetDWORDValue -ArgumentList @($hivevalue, $RegKey, $RegValue, 1) -ComputerName $Target
                     }
                     else
                     {
@@ -3105,12 +3105,12 @@ function Use-MenuSelection
             {
                 if ($Credential)
                 {
-                    Invoke-RegValueMod -Creds $Credential -RegMethod create -RegHive hklm -RegKey SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest -RegValue 'UseLogonCredential' -RegData '1'
+                    Invoke-RegValueMod -Creds $Credential -RegMethod create -RegHive 'hklm' -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegValue 'UseLogonCredential' -RegData '0x1'
                 }
 
                 else
                 {
-                    Invoke-RegValueMod -RegMethod create -RegHive hklm -RegKey SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest -RegValue 'UseLogonCredential' -RegData '1'
+                    Invoke-RegValueMod -RegMethod create -RegHive hklm -RegKey SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest -RegValue UseLogonCredential -RegData "0x1"
                 }
             }
 

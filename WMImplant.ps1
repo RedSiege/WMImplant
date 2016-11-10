@@ -6,6 +6,74 @@
     Author: @ChrisTruncer and @evan_pena2003
 #>
 
+function Enable-WinRMWMI
+{
+    param
+    (
+        [Parameter(Mandatory = $False)]
+        [System.Management.Automation.PSCredential]$Creds,
+        [Parameter(Mandatory = $False)]
+        [string]$Target
+    )
+
+    Begin
+    {
+        Write-Debug 'Opening Begin block'
+        $HKLM = 2147483650
+        $Key = 'SOFTWARE\Policies\Microsoft\Windows\WinRM\Service'
+        $DWORDName = 'AllowAutoConfig' 
+        $DWORDvalue = '0x1'
+        $String1Name = 'IPv4Filter'
+        $String2Name = 'IPv6Filter'
+        Write-Debug 'Finished begin block variables are built'
+    }
+
+    Process
+    {
+        if(!$Target)
+        {
+            $Target = Read-Host "What system are you targeting? >"
+            $Target = $Target.Trim()
+        }
+
+        # This code was found online as separate functions and combined into a single
+        # function where appropriate
+
+        # Enabling WinRM Service
+        Write-Verbose 'Attempting to create remote registry handle'
+        $Reg = New-Object -TypeName System.Management.ManagementClass -ArgumentList \\$Target\Root\default:StdRegProv
+
+        Write-Verbose 'Attempting to create Remote Key'
+        if (($reg.CreateKey($HKLM, $key)).returnvalue -ne 0) {Throw 'Failed to create key'}
+
+        Write-Verbose 'Attemping to set DWORD value'
+        if (($reg.SetDWORDValue($HKLM, $Key, $DWORDName, $DWORDvalue)).ReturnValue -ne 0) {Throw 'Failed to set DWORD'}
+
+        Write-Verbose 'Attempting to start WinRM'
+        (Get-WmiObject win32_service -Filter "Name='WinRM'" -ComputerName $Target).StartService() | Out-Null
+        Start-Sleep -Seconds 10
+
+        # Variables for WinRM Firewall Rule
+        $Key = 'SOFTWARE\Policies\Microsoft\WindowsFirewall\FirewallRules'
+        $Rule1Value = 'v2.20|Action=Allow|Active=TRUE|Dir=In|Protocol=6|Profile=Public|LPort=5985|RA4=LocalSubnet|RA6=LocalSubnet|App=System|Name=@FirewallAPI.dll,-30253|Desc=@FirewallAPI.dll,-30256|EmbedCtxt=@FirewallAPI.dll,-30267|'
+        $Rule1Name = 'WINRM-HTTP-In-TCP-PUBLIC'
+        $Rule2Value = 'v2.20|Action=Allow|Active=TRUE|Dir=In|Protocol=6|Profile=Domain|Profile=Private|LPort=5985|App=System|Name=@FirewallAPI.dll,-30253|Desc=@FirewallAPI.dll,-30256|EmbedCtxt=@FirewallAPI.dll,-30267|'
+        $Rule2Name = 'WINRM-HTTP-In-TCP'
+
+        if (($reg.CreateKey($HKLM, $key)).returnvalue -ne 0) {Throw 'Failed to create key'}
+        if (($reg.SetStringValue($HKLM, $Key, $Rule1Name, $Rule1Value)).ReturnValue -ne 0) {Throw 'Failed to set REG_SZ'}
+        if (($reg.SetStringValue($HKLM, $Key, $Rule2Name, $Rule2Value)).ReturnValue -ne 0) {Throw 'Failed to set REG_SZ'}
+
+        # Restarting firewall service
+        Write-Verbose 'Attempting to stop MpsSvc'
+        (Get-WmiObject win32_service -Filter "Name='MpsSvc'" -ComputerName $Target).StopService() | Out-Null
+        Start-Sleep -Seconds 10
+        Write-Verbose 'Attempting to start MpsSvc'
+        (Get-WmiObject win32_service -Filter "Name='MpsSvc'" -ComputerName $Target).StartService() | Out-Null
+        Start-Sleep -Seconds 10
+    }
+}
+
 function Find-CurrentUsers
 {
     param

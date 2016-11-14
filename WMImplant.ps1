@@ -23,8 +23,6 @@ function Enable-WinRMWMI
         $Key = 'SOFTWARE\Policies\Microsoft\Windows\WinRM\Service'
         $DWORDName = 'AllowAutoConfig' 
         $DWORDvalue = '0x1'
-        $String1Name = 'IPv4Filter'
-        $String2Name = 'IPv6Filter'
         Write-Debug 'Finished begin block variables are built'
     }
 
@@ -38,12 +36,17 @@ function Enable-WinRMWMI
 
         # This code was found online as separate functions and combined into a single
         # function where appropriate
-
         # Enabling WinRM Service
-        Write-Verbose 'Attempting to create remote registry handle'
-        $Reg = New-Object -TypeName System.Management.ManagementClass -ArgumentList \\$Target\Root\default:StdRegProv
-
         Write-Verbose 'Attempting to create Remote Key'
+        if($Creds)
+        {
+            Invoke-RegValueMod -RegMethod create -RegHive hklm -RegKey $Key -RegValue $DWORDName -RegData 1 -Target $Target -Creds $Creds
+        }
+        else 
+        {
+            Invoke-RegValueMod -RegMethod create -RegHive hklm -RegKey $Key -RegValue $DWORDName -RegData 1 -Target $Target
+        }
+        
         if (($reg.CreateKey($HKLM, $key)).returnvalue -ne 0) {Throw 'Failed to create key'}
 
         Write-Verbose 'Attemping to set DWORD value'
@@ -1605,7 +1608,7 @@ function Invoke-RegValueMod
 
                 if($Creds)
                 {
-                    if($RegValue -eq "UseLogonCredential")
+                    if($RegValue -eq "UseLogonCredential" -or $RegValue -eq "AllowAutoConfig") 
                     {
                         Invoke-WmiMethod -Class StdRegProv -Name SetDWORDValue -ArgumentList @($hivevalue, $RegKey, $RegValue, 1) -ComputerName $Target -Credential $Creds
                     }

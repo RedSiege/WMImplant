@@ -285,6 +285,38 @@ function Get-ComputerDrives
     end{}
 }
 
+function Get-Hostname
+{
+    param
+    (
+        #Parameter assignment
+        [Parameter(Mandatory = $False)]
+        [System.Management.Automation.PSCredential]$Creds,
+        [Parameter(Mandatory = $False)]
+        [string]$Target
+    )
+
+    Process
+    {
+        if(!$Target)
+        {
+            $Target = Read-Host "What system are you targeting? >"
+            $Target = $Target.Trim()
+        }
+
+        if($Creds)
+        {
+            Get-WmiObject -class win32_computersystem -ComputerName $Target -Credential $Creds
+        }
+
+        else
+        {
+            Get-WmiObject -class win32_computersystem -ComputerName $Target
+        }
+    }
+    end{}
+}
+
 function Get-InstalledPrograms
 {
     param
@@ -1180,6 +1212,21 @@ function Invoke-CommandGeneration
             else
             {
                 $Command = "`nInvoke-WMImplant -command active_users -Target $GenTarget`n"
+                $Command
+            }
+        }
+
+        "basic_info"
+        {
+            if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
+            {
+                $Command = "`nInvoke-WMImplant -command basic_info -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
+                $Command
+            }
+
+            else
+            {
+                $Command = "`nInvoke-WMImplant -command basic_info -Target $GenTarget`n"
                 $Command
             }
         }
@@ -2281,7 +2328,7 @@ function Invoke-WMImplant
 
                 "dg_download"
                 {
-                    if(!Target)
+                    if(!$Target)
                     {
                         Throw "You need to specify a target to run the command against!"
                     }
@@ -3031,6 +3078,27 @@ function Invoke-WMImplant
                     }
                 }
 
+                "basic_info"
+                {
+                    if(!$Target)
+                    {
+                        Throw "You need to specify a target to run the command against!"
+                    }
+
+                    Foreach($Computer in $Target)
+                    {
+                        if($RemoteCredential)
+                        {
+                            Get-Hostname -Creds $RemoteCredential -Target $Computer
+                        }
+
+                        else
+                        {
+                            Get-Hostname -Target $Computer
+                        }
+                    }
+                }
+
                 "drive_list"
                 {
                     if(!$Target)
@@ -3262,8 +3330,8 @@ function Show-WMImplantMainMenu
     $menu_options += "File Operations`n"
     $menu_options += "====================================================================`n"
     $menu_options += "cat - Attempt to read a file's contents`n"
-    $menu_options += "dg_download - Download a file from a device guard proteted system"`n
-    $menu_options += "dg_upload - Upload a file to a device guard protected system"`n
+    $menu_options += "dg_download - Download a file from a device guard proteted system`n"
+    $menu_options += "dg_upload - Upload a file to a device guard protected system`n"
     $menu_options += "download - Download a file from a remote machine`n"
     $menu_options += "ls - File/Directory listing of a specific directory`n"
     $menu_options += "ninjacopy - Copy any file`n"
@@ -3292,6 +3360,7 @@ function Show-WMImplantMainMenu
     $menu_options += "System Operations`n"
     $menu_options += "====================================================================`n"
     $menu_options += "active_users - List domain users with active processes on a system`n"
+    $menu_options += "basic_info - Gather hostname and other basic system info`n"
     $menu_options += "drive_list - List local and network drives`n"
     $menu_options += "ifconfig - IP information for NICs with IP addresses`n"
     $menu_options += "installed_programs - Receive a list of all programs installed`n"
@@ -3633,6 +3702,19 @@ function Use-MenuSelection
                 else
                 {
                     Find-CurrentUsers
+                }
+            }
+
+            "basic_info"
+            {
+                if($Credential)
+                {
+                    Get-Hostname -Creds $Credential
+                }
+
+                else
+                {
+                    Get-Hostname
                 }
             }
 

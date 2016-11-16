@@ -4,9 +4,6 @@ WMImplant is a PowerShell based tool that leverages WMI to both perform actions 
 
 Developed by [@christruncer](https://twitter.com/christruncer)
 
-Thanks to:
-    [@evan_Pena2003](https://twitter.com/evan_pena2003) - For your help with code reviews and adding functionality into the tool
-
 
 # WMImplant Functions:
 
@@ -18,6 +15,8 @@ Thanks to:
 
 ## File Operations
     cat                                 -   Reads the contents of a file
+    dg_download                         -   Downloads a file from a device guard protected system
+    dg_upload                           -   Uploads a file to a device guard protected system
     download                            -   Download a file from the targeted machine
     ls                                  -   File/Directory listing of a specific directory
     ninjacopy                           -   Copy any file via PowerSploit's NinjaCopy
@@ -26,6 +25,10 @@ Thanks to:
 
 ## Lateral Movement Facilitation
     command_exec                        -   Run a command line command and receive the output
+    disable_wdigest                     -   Removes registry value UseLogonCredential
+    disable_winrm                       -   Disables WinRM on the targeted system
+    enable_wdigest                      -   Adds registry value UseLogonCredential
+    enable_winrm                        -   Enables WinRM on the targeted system
     registry_mod                        -   Modify the registry on the targeted machine
     remote_posh                         -   Run a PowerShell script on a remote machine and receive the output
     sched_job                           -   Manipulate scheduled jobs
@@ -39,6 +42,7 @@ Thanks to:
 
 ## System Operations
     active_users                        -   List domain users with active processes on the targeted system
+    basic_info                          -   Used to enumerate basic metadata about the targeted system
     drive_list                          -   List local and network drives
     ifconfig                            -   Receive IP info from NICs with active network connections
     installed_programs                  -   Receive a list of the installed programs on the targeted machine
@@ -50,3 +54,5 @@ Thanks to:
 ## Log Operations
     logon_events                        -   Identify users that have logged onto a system
 
+Thanks to:
+    [@evan_Pena2003](https://twitter.com/evan_pena2003) - For your help with code reviews and adding functionality into the tool

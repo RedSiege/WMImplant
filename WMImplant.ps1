@@ -8,6 +8,8 @@
 
 function Disable-WinRMWMI
 {
+    # This and the coupled enable function are no longer actually used, but are included in the event
+    # I find a specific usecase for this route in the future
     param
     (
         [Parameter(Mandatory = $False)]
@@ -66,6 +68,8 @@ function Disable-WinRMWMI
 
 function Enable-WinRMWMI
 {
+    # This and the coupled disable function are no longer actually used, but are included in the event
+    # I find a specific usecase for this route in the future
     param
     (
         [Parameter(Mandatory = $False)]
@@ -2645,12 +2649,12 @@ function Invoke-WMImplant
                     {
                         if($RemoteCredential)
                         {
-                            Invoke-RegValueMod -Creds $RemoteCredential -RegMethod delete -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegValue 'UseLogonCredential' -Target $Computer
+                            Invoke-ProcSpawn -Creds $RemoteCredential -Target $Computer -Command 'powershell.exe -command "Disable-PSRemoting -Force"'
                         }
 
                         else
                         {
-                            Invoke-RegValueMod -RegMethod delete -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegValue 'UseLogonCredential' -Target $Computer
+                            Invoke-ProcSpawn -Target $Computer -Command 'powershell.exe -command "Disable-PSRemoting -Force"'
                         }
                     }
                 }
@@ -2687,12 +2691,12 @@ function Invoke-WMImplant
                     {
                         if($RemoteCredential)
                         {
-                            Enable-WinRMWMI -Creds $Credential -Target $Computer
+                            Invoke-ProcSpawn -Creds $RemoteCredential -Target $Computer -Command 'powershell.exe -command "Enable-PSRemoting -Force"'
                         }
 
                         else
                         {
-                            Enable-WinRMWMI -Target $Computer
+                            Invoke-ProcSpawn -Target $Computer -Command 'powershell.exe -command "Enable-PSRemoting -Force"'
                         }
                     }
                 }
@@ -3576,12 +3580,12 @@ function Use-MenuSelection
             {
                 if ($Credential)
                 {
-                    Disable-WinRMWMI -Creds $Credential
+                    Invoke-ProcSpawn -Creds $Credential -Command 'powershell.exe -command "Disable-PSRemoting -Force"'
                 }
 
                 else
                 {
-                    Disable-WinRMWMI
+                    Invoke-ProcSpawn -Command 'powershell.exe -command "Disable-PSRemoting -Force"'
                 }
             }
 
@@ -3602,12 +3606,12 @@ function Use-MenuSelection
             {
                 if ($Credential)
                 {
-                    Enable-WinRMWMI -Creds $Credential
+                    Invoke-ProcSpawn -Creds $Credential -Command 'powershell.exe -command "Enable-PSRemoting -Force"'
                 }
 
                 else
                 {
-                    Enable-WinRMWMI
+                    Invoke-ProcSpawn -Command 'powershell.exe -command "Enable-PSRemoting -Force"'
                 }
             }
 

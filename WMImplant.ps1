@@ -933,9 +933,8 @@ function Invoke-CommandGeneration
                         $Command = "`nInvoke-WMImplant -command registry_mod -RegMethod delete -RegHive $GenRegHive -RegKey $GenRegKey -RegValue $GenRegValue -Target $GenTarget`n"
                     }
                 }
-                $Command
             }
-
+            $Command
         }
 
         "remote_posh"
@@ -1000,8 +999,8 @@ function Invoke-CommandGeneration
                         $Command = "`nInvoke-WMImplant -command sched_job -JobAction create -RemoteFile $GenJobName -Time $GenJobTime -Target $GenTarget`n"
                     }
                 }
-                $Command
             }
+            $Command
         }
 
         "service_mod"
@@ -1060,8 +1059,8 @@ function Invoke-CommandGeneration
                         $Command = "`nInvoke-WMImplant -command service_mod -ServiceAction create -ServiceName $GenServiceName -RemoteFile $GenServicePath -Target $GenTarget`n"
                     }
                 }
-                $Command
             }
+            $Command
         }
 
         "wdigest"
@@ -1112,8 +1111,8 @@ function Invoke-CommandGeneration
                         $Command = "`nInvoke-WMImplant -command process_kill -ProcessID $GenProcID -Target $GenTarget -Target $GenTarget`n"
                     }
                 }
-                $Command
             }
+            $Command
         }
 
         "process_start"
@@ -1250,8 +1249,8 @@ function Invoke-CommandGeneration
                         $Command = "`nInvoke-WMImplant -command logon_events -Target $GenTarget`n"
                     }
                 }
-                $Command
             }
+            $Command
         }
 
         "logoff"

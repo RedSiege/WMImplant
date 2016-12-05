@@ -504,8 +504,8 @@ function Get-InstalledPrograms
         # Replacing original WMI property value from remote system
         Write-Verbose "Replacing original WMI property value from remote system"
 
-        $modified_property.DebugFilePath = $Original_WMIProperty
-        $modified_property.Put()
+        $modified_WMIObject.DebugFilePath = $Original_WMIProperty
+        $modified_WMIObject.Put()
         
         Write-Verbose "Done!"
     }
@@ -1916,8 +1916,8 @@ function Invoke-RemoteScriptWithOutput
 
         # Removing Registry value from remote system
         Write-Verbose "Removing registry value from remote system"
-        $modified_property.DebugFilePath = $Original_WMIProperty
-        $modified_property.Put()
+        $modified_WMIObject.DebugFilePath = $Original_WMIProperty
+        $modified_WMIObject.Put()
 
         Write-Verbose "Done!"
     }

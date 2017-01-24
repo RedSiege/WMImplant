@@ -17,7 +17,6 @@ Developed by [@christruncer](https://twitter.com/christruncer)
     cat                                 -   Reads the contents of a file
     download                            -   Download a file from the targeted machine
     ls                                  -   File/Directory listing of a specific directory
-    ninjacopy                           -   Copy any file via PowerSploit's NinjaCopy
     search                              -   Search for a file on a user-specified drive
     upload                              -   Upload a file to the targeted machine
 
@@ -31,7 +30,6 @@ Developed by [@christruncer](https://twitter.com/christruncer)
     remote_posh                         -   Run a PowerShell script on a remote machine and receive the output
     sched_job                           -   Manipulate scheduled jobs
     service_mod                         -   Create, delete, or modify system services
-    wdigest                             -   Alias for Invoke-Mimikatz's wdigest
 
 ## Process Operations
     process_kill                        -   Kill a process via name or process id on the targeted machine

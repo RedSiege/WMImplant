@@ -1039,17 +1039,17 @@ function Invoke-CommandGeneration
 
         "remote_posh"
         {
-            $PoshURL = Read-Host "What's the file location where the PowerShell script you want to run is located? >"
+            $PoshLocation = Read-Host "What's the file location where the PowerShell script you want to run is located? >"
             $PoshFunction = Read-Host "What's the PowerShell Function you'd like to call? >"
 
             if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
             {
-                $Command = "`nInvoke-WMImplant -command remote_posh -Location $PoshURL -Function $PoshFunction -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
+                $Command = "`nInvoke-WMImplant -command remote_posh -Location $PoshLocation -Function $PoshFunction -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
             }
 
             else
             {
-                $Command = "`nInvoke-WMImplant -command remote_posh -Location $PoshURL -Function $PoshFunction -Target $GenTarget`n"
+                $Command = "`nInvoke-WMImplant -command remote_posh -Location $PoshLocation -Function $PoshFunction -Target $GenTarget`n"
             }
             $Command
         }
@@ -2656,7 +2656,7 @@ function Invoke-WMImplant
                         Throw "You need to specify a target to run the command against!"
                     }
 
-                    if(!$Url)
+                    if(!$Location)
                     {
                         Throw "You need to specify the Location flag to provide the file location where the script is!"
                     }
@@ -2670,12 +2670,12 @@ function Invoke-WMImplant
                     {
                         if($RemoteCredential)
                         {
-                            Invoke-RemoteScriptWithOutput -Creds $RemoteCredential -Location $Url -Function $Function -Target $Computer
+                            Invoke-RemoteScriptWithOutput -Creds $RemoteCredential -Location $Location -Function $Function -Target $Computer
                         }
 
                         else
                         {
-                            Invoke-RemoteScriptWithOutput -Location $Url -Function $Function -Target $Computer
+                            Invoke-RemoteScriptWithOutput -Location $Location -Function $Function -Target $Computer
                         }
                     }
                 }

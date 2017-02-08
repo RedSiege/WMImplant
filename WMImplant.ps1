@@ -2347,25 +2347,54 @@ function Invoke-WMImplant
         [Parameter(Mandatory = $False, ParameterSetName='Directory Listing')]
         [switch]$LS,
         [Parameter(Mandatory = $False, ParameterSetName='File Search Name')]
-        [Parameter(ParameterSetName='File Search Extension')]
+        [Parameter(Mandatory = $False, ParameterSetName='File Search Extension')]
         [switch]$Search,
-        [Parameter(ParameterSetName='Upload File')]
+        [Parameter(Mandatory = $False, ParameterSetName='Upload File')]
         [switch]$Upload,
-        [Parameter(ParameterSetName='Command Execution')]
+        [Parameter(Mandatory = $False, ParameterSetName='Command Execution')]
         [switch]$CommandExec,
-        [Parameter(ParameterSetName='Disable WDigest')]
+        [Parameter(Mandatory = $False, ParameterSetName='Disable WDigest')]
         [switch]$DisableWdigest,
-        [Parameter(ParameterSetName='Disable WinRM')]
+        [Parameter(Mandatory = $False, ParameterSetName='Disable WinRM')]
         [switch]$DisableWinRM,
-        [Parameter(ParameterSetName='Enable WDigest')]
+        [Parameter(Mandatory = $False, ParameterSetName='Enable WDigest')]
         [switch]$EnableWdigest,
-        [Parameter(ParameterSetName='Enable WinRM')]
+        [Parameter(Mandatory = $False, ParameterSetName='Enable WinRM')]
         [switch]$EnableWinRM,
         [Parameter(Mandatory = $False, ParameterSetName='Create Reg Key')]
         [Parameter(ParameterSetName='Delete Reg Key')]
         [string]$RegHive,
-        [Parameter(ParameterSetName='Remote PowerShell')]
+        [Parameter(Mandatory = $False, ParameterSetName='Remote PowerShell')]
         [switch]$RemotePosh,
+        [Parameter(Mandatory = $False, ParameterSetName='Set Default WMI Property')]
+        [switch]$SetWMIDefault,
+        [Parameter(Mandatory = $False, ParameterSetName='Process Listing')]
+        [switch]$PS,
+        [Parameter(Mandatory = $False, ParameterSetName='Process Kill Name')]
+        [Parameter(ParameterSetName='Process Kill ID')]
+        [switch]$ProcessKill,
+        [Parameter(Mandatory = $False, ParameterSetName='Process Start')]
+        [switch]$ProcessStart,
+        [Parameter(Mandatory = $False, ParameterSetName='List Active Users')]
+        [switch]$ActiveUsers,
+        [Parameter(Mandatory = $False, ParameterSetName='List Basic Info')]
+        [switch]$BasicInfo,
+        [Parameter(Mandatory = $False, ParameterSetName='Drive Listing')]
+        [switch]$DriveList,
+        [Parameter(Mandatory = $False, ParameterSetName='Active NIC Listing')]
+        [switch]$IFConfig,
+        [Parameter(Mandatory = $False, ParameterSetName='List Installed Programs')]
+        [switch]$InstalledPrograms,
+        [Parameter(Mandatory = $False, ParameterSetName='Identify Vacant System')]
+        [switch]$VacantSystem,
+        [Parameter(Mandatory = $False, ParameterSetName='Logon Events')]
+        [switch]$LogonEvents,
+        [Parameter(Mandatory = $False, ParameterSetName='Logoff Users')]
+        [switch]$LogOff,
+        [Parameter(Mandatory = $False, ParameterSetName='Reboot System')]
+        [switch]$Reboot,
+        [Parameter(Mandatory = $False, ParameterSetName='Power Off System')]
+        [switch]$PowerOff,
     )
 
     Process
@@ -2847,108 +2876,112 @@ function Invoke-WMImplant
             }
         }
 
-        "service_mod"
+        elseif($ServiceStart)
         {
             if(!$Target)
             {
                 Throw "You need to specify a target to run the command against!"
             }
 
-            if(!$ServiceAction)
+            if(!$ServiceName)
             {
-                Throw "You need to specify if you want to [start], [stop], [create], or [delete] a service with -ServiceAction!"
+                Throw "You need to specify the service name you want to start!"
             }
 
-            switch ($ServiceAction.Trim().ToLower())
+            Foreach($Computer in $Target)
             {
-                "start"
+                if($RemoteCredential)
                 {
-                    if(!$ServiceName)
-                    {
-                        Throw "You need to specify the service name you want to start!"
-                    }
-
-                    Foreach($Computer in $Target)
-                    {
-                        if($RemoteCredential)
-                        {
-                            Invoke-ServiceMod -Creds $RemoteCredential -Target $Computer -Service $ServiceName -Start
-                        }
-                        else
-                        {
-                            Invoke-ServiceMod -Target $Computer -Service $ServiceName -Start
-                        }
-                    }
+                    Invoke-ServiceMod -Creds $RemoteCredential -Target $Computer -Service $ServiceName -Start
                 }
-
-                "stop"
+                else
                 {
-                    if(!$ServiceName)
-                    {
-                        Throw "You need to specify the service name you want to stop!"
-                    }
-
-                    Foreach($Computer in $Target)
-                    {
-                        if($RemoteCredential)
-                        {
-                            Invoke-ServiceMod -Creds $RemoteCredential -Target $Computer -Service $ServiceName -Stop
-                        }
-                        else
-                        {
-                            Invoke-ServiceMod -Target $Computer -Service $ServiceName -Stop
-                        }
-                    }
+                    Invoke-ServiceMod -Target $Computer -Service $ServiceName -Start
                 }
+            }
 
-                "delete"
+        elseif($ServiceStop)
+        {
+            if(!$Target)
+            {
+                Throw "You need to specify a target to run the command against!"
+            }
+
+            if(!$ServiceName)
+            {
+                Throw "You need to specify the service name you want to stop!"
+            }
+
+            Foreach($Computer in $Target)
+            {
+                if($RemoteCredential)
                 {
-                    if(!$ServiceName)
-                    {
-                        Throw "You need to specify the service name you want to delete!"
-                    }
-
-                    Foreach($Computer in $Target)
-                    {
-                        if($RemoteCredential)
-                        {
-                            Invoke-ServiceMod -Creds $RemoteCredential -Target $Computer -Service $ServiceName -Delete
-                        }
-                        else
-                        {
-                            Invoke-ServiceMod -Target $Computer -Service $ServiceName -Delete
-                        }
-                    }
+                    Invoke-ServiceMod -Creds $RemoteCredential -Target $Computer -Service $ServiceName -Stop
                 }
-
-                "create"
+                else
                 {
-                    if(!$ServiceName)
-                    {
-                        Throw "You need to specify the service name you want to create!"
-                    }
-
-                    if(!$RemoteFile)
-                    {
-                        Throw "You need to specify the path to the service binary for the service you are creating!"
-                    }
-
-                    Foreach($Computer in $Target)
-                    {
-                        if($RemoteCredential)
-                        {
-                            Invoke-ServiceMod -Creds $RemoteCredential -Target $Computer -NewServiceName $ServiceName -NewServicePath $RemoteFile -Create
-                        }
-                        else
-                        {
-                            Invoke-ServiceMod -Target $Computer -NewServiceName $ServiceName -NewServicePath $RemoteFile -Create
-                        }
-                    }
+                    Invoke-ServiceMod -Target $Computer -Service $ServiceName -Stop
                 }
             }
         }
 
-        "set_default"
+        elseif($ServiceDelete)
+        {
+            if(!$ServiceName)
+            {
+                Throw "You need to specify the service name you want to delete!"
+            }
+
+            if(!$ServiceName)
+            {
+                Throw "You need to specify the service name you want to delete!"
+            }
+
+            Foreach($Computer in $Target)
+            {
+                if($RemoteCredential)
+                {
+                    Invoke-ServiceMod -Creds $RemoteCredential -Target $Computer -Service $ServiceName -Delete
+                }
+                else
+                {
+                    Invoke-ServiceMod -Target $Computer -Service $ServiceName -Delete
+                }
+            }
+        }
+
+        elseif($ServiceCreate)
+        {
+            if(!$Target)
+            {
+                Throw "You need to specify a target to run the command against!"
+            }
+
+            if(!$ServiceName)
+            {
+                Throw "You need to specify the service name you want to create!"
+            }
+
+            if(!$RemoteFile)
+            {
+                Throw "You need to specify the path to the service binary for the service you are creating!"
+            }
+
+            Foreach($Computer in $Target)
+            {
+                if($RemoteCredential)
+                {
+                    Invoke-ServiceMod -Creds $RemoteCredential -Target $Computer -NewServiceName $ServiceName -NewServicePath $RemoteFile -Create
+                }
+                else
+                {
+                    Invoke-ServiceMod -Target $Computer -NewServiceName $ServiceName -NewServicePath $RemoteFile -Create
+                }
+            }
+        }
+    
+
+        elseif($SetWMIDefault)
         {
             if(!$Target)
             {
@@ -2969,7 +3002,7 @@ function Invoke-WMImplant
             }
         }
 
-        "ps"
+        elseif($PS)
         {
             if(!$Target)
             {
@@ -2990,7 +3023,7 @@ function Invoke-WMImplant
             }
         }
 
-        "process_kill"
+        elseif($ProcessKill)
         {
             if(!$Target)
             {
@@ -3033,7 +3066,7 @@ function Invoke-WMImplant
             }
         }
 
-        "process_start"
+        elseif($ProcessStart)
         {
             if(!$Target)
             {
@@ -3059,7 +3092,7 @@ function Invoke-WMImplant
             }
         }
 
-        "active_users"
+        elseif($ActiveUsers)
         {
             if(!$Target)
             {
@@ -3080,7 +3113,7 @@ function Invoke-WMImplant
             }
         }
 
-        "basic_info"
+        elseif($BasicInfo)
         {
             if(!$Target)
             {
@@ -3101,7 +3134,7 @@ function Invoke-WMImplant
             }
         }
 
-        "drive_list"
+        elseif($DriveList)
         {
             if(!$Target)
             {
@@ -3122,7 +3155,7 @@ function Invoke-WMImplant
             }
         }
 
-        "ifconfig"
+        elseif($IFConfig)
         {
             if(!$Target)
             {
@@ -3143,7 +3176,7 @@ function Invoke-WMImplant
             }
         }
 
-        "installed_programs"
+        elseif($InstalledPrograms)
         {
             if(!$Target)
             {
@@ -3164,7 +3197,7 @@ function Invoke-WMImplant
             }
         }
 
-        "vacant_system"
+        elseif($VacantSystem)
         {
             if(!$Target)
             {
@@ -3185,7 +3218,7 @@ function Invoke-WMImplant
             }
         }
 
-        "logon_events"
+        elseif($LogonEvents)
         {
             if(!$Target)
             {
@@ -3222,7 +3255,7 @@ function Invoke-WMImplant
             }
         }
 
-        "logoff"
+        elseif($LogOff)
         {
             if(!$Target)
             {
@@ -3243,7 +3276,7 @@ function Invoke-WMImplant
             }
         }
 
-        "reboot"
+        elseif($Reboot)
         {
             if(!$Target)
             {
@@ -3264,7 +3297,7 @@ function Invoke-WMImplant
             }
         }
 
-        "power_off"
+        elseif($PowerOff)
         {
             if(!$Target)
             {
@@ -3283,11 +3316,6 @@ function Invoke-WMImplant
                     Invoke-PowerOptionsWMI -Target $Computer -Shutdown
                 }
             }
-        }
-
-        default
-        {
-            Write-Output "You did not provide a valid command!  Please try again!"
         }
 
         elseif($ListCommands)

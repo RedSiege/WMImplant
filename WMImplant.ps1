@@ -2283,7 +2283,7 @@ function Invoke-WMImplant
         [Parameter(ParameterSetName='Upload File')]
         [Parameter(ParameterSetName='Logon Events')]
         [string]$LocalFile,
-        [Parameter(Mandatory = $False, ParameterSetName='Read File'))]
+        [Parameter(Mandatory = $False, ParameterSetName='Read File')]
         [Parameter(ParameterSetName='Upload File')]
         [Parameter(ParameterSetName='Download File')]
         [Parameter(ParameterSetName='File Search Name')]
@@ -2394,7 +2394,7 @@ function Invoke-WMImplant
         [Parameter(Mandatory = $False, ParameterSetName='Reboot System')]
         [switch]$Reboot,
         [Parameter(Mandatory = $False, ParameterSetName='Power Off System')]
-        [switch]$PowerOff,
+        [switch]$PowerOff
     )
 
     Process
@@ -2682,11 +2682,6 @@ function Invoke-WMImplant
                 Throw "You need to specify a target to run the command against!"
             }
 
-            if(!$KeyCreate) -and (!$KeyDelete)
-            {
-                Throw "You need to specify if you want to create or delete a string registry value!"
-            }
-
             if(!$RegHive)
             {
                 Throw "You need to specify either [hklm] or [hkcu] for the registry value to use!"
@@ -2713,21 +2708,6 @@ function Invoke-WMImplant
                     Invoke-RegValueMod -Target $Computer -KeyCreate -RegHive $RegHive -RegKey $RegKey -RegSubKey $RegValue -RegValue $RegValue
                 }
             }
-
-            elseif($KeyDelete)
-            {
-                Foreach($Computer in $Target)
-                {
-                    if($RemoteCredential)
-                    {
-                        Invoke-RegValueMod -Target $Computer -Creds $RemoteCredential -KeyDelete -RegHive $RegHive -RegKey $RegKey -RegSubKey $RegValue
-                    }
-                    else
-                    {
-                        Invoke-RegValueMod -Target $Computer -KeyDelete -RegHive $RegHive -RegKey $RegKey -RegSubKey $RegValue
-                    }
-                }
-            }
         }
 
         elseif($KeyDelete)
@@ -2737,11 +2717,6 @@ function Invoke-WMImplant
                 Throw "You need to specify a target to run the command against!"
             }
 
-            if(!$KeyCreate) -and (!$KeyDelete)
-            {
-                Throw "You need to specify if you want to create or delete a string registry value!"
-            }
-
             if(!$RegHive)
             {
                 Throw "You need to specify either [hklm] or [hkcu] for the registry value to use!"
@@ -2749,12 +2724,12 @@ function Invoke-WMImplant
 
             if(!$RegKey)
             {
-                Throw "You need to specify the registry key you will add or remove a value from!"
+                Throw "You need to specify the registry key you will remove a value from!"
             }
 
-            if(!$RegValue)
+            if(!$RegSubKey)
             {
-                Throw "Please provide the registry value you are looking to modify!"
+                Throw "Please provide the registry sub key you are looking to delete!"
             }
 
             Foreach($Computer in $Target)
@@ -2899,6 +2874,7 @@ function Invoke-WMImplant
                     Invoke-ServiceMod -Target $Computer -Service $ServiceName -Start
                 }
             }
+        }
 
         elseif($ServiceStop)
         {
@@ -2927,9 +2903,9 @@ function Invoke-WMImplant
 
         elseif($ServiceDelete)
         {
-            if(!$ServiceName)
+            if(!$Target)
             {
-                Throw "You need to specify the service name you want to delete!"
+                Throw "You need to specify a target to run the command against!"
             }
 
             if(!$ServiceName)

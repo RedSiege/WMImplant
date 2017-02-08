@@ -1762,12 +1762,6 @@ function Invoke-RegValueMod
             $Target = $Target.Trim()
         }
 
-        if(!$RegMethod)
-        {
-            $RegMethod = Read-Host "Do you want to [create] or [delete] a string registry value? >"
-            $RegMethod = $RegMethod.Trim().ToLower()
-        }
-
         if(!$RegHive)
         {
             $RegHive = Read-Host "What hive would you like to modify, [hklm] or [hkcu]? >"

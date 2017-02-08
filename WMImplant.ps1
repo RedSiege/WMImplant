@@ -2273,49 +2273,59 @@ function Invoke-WMImplant
         [string]$Command,
         [Parameter(Mandatory = $False)]
         [string]$ListCommands,
-        [Parameter(Mandatory = $False)]
+        [Parameter(Mandatory = $False, ParameterSetName='id'))]
         [string]$RemoteUser,
-        [Parameter(Mandatory = $False)]
+        [Parameter(Mandatory = $False, ParameterSetName='id'))]
         [string]$RemotePass,
-        [Parameter(Mandatory = $False)]
+        [Parameter(Mandatory = $False, ParameterSetName='Delete Job')]
         [string]$RemoteID,
-        [Parameter(Mandatory = $False)]
+        [Parameter(Mandatory = $False, ParameterSetName='Download File')],
+        [Parameter(ParameterSetName='Upload File')]
+        [Parameter(ParameterSetName='Logon Events')]
         [string]$LocalFile,
-        [Parameter(Mandatory = $False)]
+        [Parameter(Mandatory = $False, ParameterSetName='Read File'))]
+        [Parameter(ParameterSetName='Upload File')]
+        [Parameter(ParameterSetName='Download File')]
+        [Parameter(ParameterSetName='File Search Name')]
+        [Parameter(ParameterSetName='Process Start')]
+        [Parameter(ParameterSetName='Job Create')]
         [string]$RemoteFile,
-        [Parameter(Mandatory = $False)]
+        [Parameter(ParameterSetName='Directory Listing')]
+        [string]$RemoteDirectory,
+        [Parameter(Mandatory = $False, ParameterSetName='File Search Name')]
+        [Parameter(ParameterSetName='File Search Extension')]
         [string]$RemoteDrive,
-        [Parameter(Mandatory = $False)]
+        [Parameter(Mandatory = $False, ParameterSetName='File Search Extension')]
         [string]$RemoteExtension,
         [Parameter(Mandatory = $False, ValueFromPipeLine=$True)]
         [string]$Target,
-        [Parameter(Mandatory = $False)]
+        [Parameter(Mandatory = $False, ParameterSetName='id'))]
         [string]$Url,
-        [Parameter(Mandatory = $False)]
+        [Parameter(Mandatory = $False, ParameterSetName='id'))]
         [string]$Function,
-        [Parameter(Mandatory = $False)]
+        [Parameter(Mandatory = $False, ParameterSetName='id'))]
         [string]$ProcessName,
-        [Parameter(Mandatory = $False)]
+        [Parameter(Mandatory = $False, ParameterSetName='id'))]
         [string]$ProcessID,
-        [Parameter(Mandatory = $False)]
+        [Parameter(Mandatory = $False, ParameterSetName='id'))]
         [string]$JobAction,
-        [Parameter(Mandatory = $False)]
+        [Parameter(Mandatory = $False, ParameterSetName='id'))]
         [string]$ServiceName,
-        [Parameter(Mandatory = $False)]
+        [Parameter(Mandatory = $False, ParameterSetName='id'))]
         [string]$ServiceAction,
-        [Parameter(Mandatory = $False)]
+        [Parameter(Mandatory = $False, ParameterSetName='id'))]
         [string]$Time,
-        [Parameter(Mandatory = $False)] 
+        [Parameter(Mandatory = $False, ParameterSetName='id'))] 
         [string]$RegMethod,
-        [Parameter(Mandatory = $False)] 
+        [Parameter(Mandatory = $False, ParameterSetName='id'))] 
         [string]$RegHive,
-        [Parameter(Mandatory = $False)] 
+        [Parameter(Mandatory = $False, ParameterSetName='id'))] 
         [string]$RegKey,
-        [Parameter(Mandatory = $False)] 
+        [Parameter(Mandatory = $False, ParameterSetName='id'))] 
         [string]$RegValue,
-        [Parameter(Mandatory = $False)] 
+        [Parameter(Mandatory = $False, ParameterSetName='id'))] 
         [string]$RegData,
-        [Parameter(Mandatory = $False)] 
+        [Parameter(Mandatory = $False, ParameterSetName='id'))] 
         [string]$RemoteCommand
     )
 

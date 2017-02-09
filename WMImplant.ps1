@@ -2225,7 +2225,7 @@ function Invoke-WMImplant
         [switch]$EnableWinRM,
         [Parameter(Mandatory = $False, ParameterSetName='Create Reg Key')]
         [Parameter(ParameterSetName='Delete Reg Key')]
-        [ValidateSet("hklm",”hkcu”,"hkcr","hkusers","hkcurrentconfig")]
+        [ValidateSet("hklm","hkcu","hkcr","hkusers","hkcurrentconfig")]
         [string]$RegHive,
         [Parameter(Mandatory = $False, ParameterSetName='Remote PowerShell')]
         [switch]$RemotePosh,

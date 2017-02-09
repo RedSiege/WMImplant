@@ -878,12 +878,12 @@ function Invoke-CommandGeneration
 
             if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
             {
-                $Command = "`nInvoke-WMImplant -LS -RemoteFile $DirLs -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
+                $Command = "`nInvoke-WMImplant -LS -RemoteDirectory $DirLs -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
             }
 
             else
             {
-                $Command = "`nInvoke-WMImplant -LS -RemoteFile $DirLs -Target $GenTarget`n"
+                $Command = "`nInvoke-WMImplant -LS -RemoteDirectory $DirLs -Target $GenTarget`n"
             }
             $Command
         }
@@ -2284,7 +2284,7 @@ function Invoke-WMImplant
                 Throw "You need to specify a target to run the command against!"
             }
 
-            if(!$RemoteFile)
+            if(!$RemoteDirectory)
             {
                 Throw "Please provide the RemoteFile parameter to specify the directory to list!"
             }
@@ -2293,7 +2293,7 @@ function Invoke-WMImplant
             {
                 if($RemoteCredential)
                 {
-                    Invoke-LSWMImplant -Creds $RemoteCredential -Target $Computer -Directory $RemoteFile
+                    Invoke-LSWMImplant -Creds $RemoteCredential -Target $Computer -Directory $RemoteDirectory
                 }
 
                 else

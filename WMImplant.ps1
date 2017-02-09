@@ -1606,24 +1606,72 @@ function Invoke-RegValueMod
             $RegHive = Read-Host "What hive would you like to modify, [hklm] or [hkcu]? >"
             $RegHive = $RegHive.Trim().ToLower()
 
-            if($RegHive.ToLower() -eq "hklm")
+            switch($RegHive.ToLower())
             {
-                $hivevalue = $hklm
-            }
-            else
-            {
-                $hivevalue = $hkcu
+                "hklm"
+                {
+                    $hivevalue = $hklm
+                }
+
+                "hkcu"
+                {
+                    $hivevalue = $hkcu
+                }
+
+                "hkcr"
+                {
+                    $hivevalue = $hkcr
+                }
+
+                "hkusers"
+                {
+                    $hivevalue = $hkusers
+                }
+
+                "hkcurrentconfig"
+                {
+                    $hivevalue = $hkcurrentconfig
+                }
+
+                default
+                {
+                    $hivevalue = $hkcu
+                }
             }
         }
         else
         {
-            if($RegHive.ToLower() -eq "hklm")
+            switch($RegHive.ToLower())
             {
-                $hivevalue = $hklm
-            }
-            else
-            {
-                $hivevalue = $hkcu
+                "hklm"
+                {
+                    $hivevalue = $hklm
+                }
+
+                "hkcu"
+                {
+                    $hivevalue = $hkcu
+                }
+
+                "hkcr"
+                {
+                    $hivevalue = $hkcr
+                }
+
+                "hkusers"
+                {
+                    $hivevalue = $hkusers
+                }
+
+                "hkcurrentconfig"
+                {
+                    $hivevalue = $hkcurrentconfig
+                }
+
+                default
+                {
+                    $hivevalue = $hkcu
+                }
             }
         }
 
@@ -2097,7 +2145,7 @@ function Invoke-WMImplant
         [Parameter(Mandatory = $False, ParameterSetName='Interactive')]
         [switch]$Interactive,
         [Parameter(Mandatory = $False)]
-        [string]$ListCommands,
+        [switch]$ListCommands,
         [Parameter(Mandatory = $False)]
         [string]$RemoteUser,
         [Parameter(Mandatory = $False)]
@@ -2126,7 +2174,7 @@ function Invoke-WMImplant
         [Parameter(Mandatory = $False, ParameterSetName='Process Kill Name')]
         [string]$ProcessName,
         [Parameter(Mandatory = $False, ParameterSetName='Process Kill ID')]
-        [string]$ProcessID,
+        [int]$ProcessID,
         [Parameter(Mandatory = $False, ParameterSetName='Service Start')]
         [Parameter(ParameterSetName='Service Stop')]
         [Parameter(ParameterSetName='Service Create')]
@@ -2177,6 +2225,7 @@ function Invoke-WMImplant
         [switch]$EnableWinRM,
         [Parameter(Mandatory = $False, ParameterSetName='Create Reg Key')]
         [Parameter(ParameterSetName='Delete Reg Key')]
+        [ValidateSet("hklm",”hkcu”,"hkcr","hkusers","hkcurrentconfig")]
         [string]$RegHive,
         [Parameter(Mandatory = $False, ParameterSetName='Remote PowerShell')]
         [switch]$RemotePosh,

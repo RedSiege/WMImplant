@@ -2286,7 +2286,7 @@ function Invoke-WMImplant
 
             if(!$RemoteDirectory)
             {
-                Throw "Please provide the RemoteFile parameter to specify the directory to list!"
+                Throw "Please provide the RemoteDirectory parameter to specify the directory to list!"
             }
 
             Foreach($Computer in $Target)
@@ -2298,7 +2298,7 @@ function Invoke-WMImplant
 
                 else
                 {
-                    Invoke-LSWMImplant -Target $Computer -Directory $RemoteFile
+                    Invoke-LSWMImplant -Target $Computer -Directory $RemoteDirectory
                 }
             }
         }

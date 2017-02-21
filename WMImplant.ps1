@@ -1015,7 +1015,7 @@ function Invoke-CommandGeneration
         {
             $GenRegMethod = Read-Host "Do you want to [create] or [delete] a string registry value? >"
             $GenRegMethod = $GenRegMethod.Trim().ToLower()
-            $GenRegHive = Read-Host "What hive would you like to modify, [hklm] or [hkcu]? >"
+            $GenRegHive = Read-Host "What hive would you like to modify? Ex: hklm >"
             $GenRegKey = Read-Host "What's the registry key you'd like to modify? Ex: SOFTWARE\Microsoft\Windows >"
             $GenRegValue = Read-Host "What's the registry subkey you'd like to modify? Ex: WMImplantInstalled >"
 
@@ -1603,7 +1603,7 @@ function Invoke-RegValueMod
 
         if(!$RegHive)
         {
-            $RegHive = Read-Host "What hive would you like to modify, [hklm] or [hkcu]? >"
+            $RegHive = Read-Host "What hive would you like to modify? Ex: hklm >"
             $RegHive = $RegHive.Trim().ToLower()
 
             switch($RegHive.ToLower())
@@ -2237,7 +2237,7 @@ function Invoke-WMImplant
         #Parameter assignment
         [Parameter(Mandatory = $False, ParameterSetName='Interactive')]
         [switch]$Interactive,
-        [Parameter(Mandatory = $False)]
+        [Parameter(Mandatory = $False, ParameterSetName='List Commands')]
         [switch]$ListCommands,
         [Parameter(Mandatory = $False)]
         [string]$RemoteUser,

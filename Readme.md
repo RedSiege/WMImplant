@@ -50,6 +50,10 @@ Developed by [@christruncer](https://twitter.com/christruncer)
 ## Log Operations
     logon_events                        -   Identify users that have logged onto a system
 
+#Usage
+
+The easiest way to get up and running with WMImplant is to import the script and run Invoke-WMImplant. This will present you with the main menu and you can instantly start choosing a command to run. Within the main menu, you can also choose to have WMImplant output the command line command you would need to use in order to run WMImplant in a non-interactive manner.
+
 Thanks to:
     [@evan_Pena2003](https://twitter.com/evan_pena2003) - For your help with code reviews and adding functionality into the tool
     [@danielbohannon](https://twitter.com/danielhbohannon) - For your help with code obfuscation

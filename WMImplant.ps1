@@ -478,12 +478,6 @@ function Get-InstalledPrograms
 
     Process
     {
-        $fullregistrypath = "HKLM:\Software\Microsoft\Windows"
-        $registrydownname = -join ((65..90) + (97..122) | Get-Random -Count 5 | % {[char]$_})
-        # The reghive value is for hkey_local_machine
-        $reghive = 2147483650
-        $regpath = "SOFTWARE\Microsoft\Windows"
-        $SystemHostname = Get-WMIObject Win32_ComputerSystem | Select-Object -ExpandProperty name
 
         if(!$Target)
         {
@@ -514,19 +508,34 @@ function Get-InstalledPrograms
             Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -ObfuscateWithEnvVar
         }
 
-        Write-Verbose "Sleeping to let remote system store the information"
-        Start-Sleep -s 15
-
-        # Grab file from remote system's registry
-        Write-Verbose "Reading info from remote WMI Property"
-        if($Creds)
+        # Poll remote system, and determine if the script is done
+        # If not, sleep and poll again
+        Do
         {
-            $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target -Credential $Creds
+            Write-Verbose "Polling property to see if the script has completed"
+            if($Creds)
+            {
+                if($Creds)
+                {
+                    $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target -Credential $Creds
+                }
+                else
+                {
+                    $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target
+                }
+            }
+            if($modified_WMIObject.DebugFilePath -ne $Original_WMIProperty)
+            {
+                Write-Verbose "Script is not done, sleeping for 5 and trying again"
+                Start-Sleep -s 5
+            }
+            else 
+            {
+                Write-Verbose "Script is complete, pulling data now"
+                $quit = $true
+            }
         }
-        else
-        {
-            $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target
-        }
+        Until($quit = $true)
     
         $decode = [char[]][int[]]$modified_WMIObject.DebugFilePath.Split(',') -Join ''
         # Print to console

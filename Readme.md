@@ -11,6 +11,7 @@ Developed by [@christruncer](https://twitter.com/christruncer)
     change_user                         -   Change the context of the user you will execute WMI commands as
     exit                                -   Exits WMImplant
     gen_cli                             -   Generate the command line command to use WMImplant non-interactively
+    set_default                         -   Sets the targeted system's WMI property back to its default value
     help                                -   View the list of commands and descriptions
 
 ## File Operations

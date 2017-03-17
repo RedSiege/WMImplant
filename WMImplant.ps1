@@ -3280,7 +3280,7 @@ function Show-WMImplantMainMenu
     $menu_options += "change_user - Change the user used to connect to remote systems`n"
     $menu_options += "exit - Exit WMImplant`n"
     $menu_options += "gen_cli - Generate the CLI command to execute a command via WMImplant`n"
-    $menu_options += "set_default - Set default value od DebugFilePath property`n"
+    $menu_options += "set_default - Set default value of DebugFilePath property`n"
     $menu_options += "help - Display this help/command menu`n`n"
 
     $menu_options += "File Operations`n"

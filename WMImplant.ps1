@@ -1862,27 +1862,49 @@ function Invoke-RemoteScriptWithOutput
             Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -ObfuscateWithEnvVar
         }
 
-        # Grab output from remote system
-        Write-Verbose "Sleeping, and then reading file from remote system"
-        Start-Sleep -s 30
-
-        if($Creds)
+        # Poll remote system, and determine if the script is done
+        # If not, sleep and poll again
+        $quit = $false
+        while($quit -eq $false)
         {
-            $results = Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target -Credential $Creds
+            Write-Verbose "Polling property to see if the script has completed"
+            if($Creds)
+            {
+                $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target -Credential $Creds
+            }
+            else
+            {
+                $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target
+            }
+            
+            try 
+            {
+                if($encoded_script -eq $modified_WMIObject.DebugFilePath)
+                {
+                    Write-Verbose "Script is not done, sleeping for 5 and trying again"
+                    Start-Sleep -s 5
+                }
+                else 
+                {
+                    Write-Verbose "Script is complete, pulling data now"
+                    $quit = $true
+                }
+            }
+            catch
+            {
+                Write-Verbose "Script is not done, sleeping for 5 and trying again"
+                Start-Sleep -s 5
+            }
         }
-        else
-        {
-            $results = Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target
-        }
-
-        $decode = [char[]][int[]]$results.DebugFilePath.Split(',') -Join ''
+    
+        $decode = [char[]][int[]]$modified_WMIObject.DebugFilePath.Split(',') -Join ''
         # Print to console
         $decode
 
-        # Removing Registry value from remote system
-        Write-Verbose "Removing registry value from remote system"
-        $results.DebugFilePath = $Original_WMIProperty
-        $null = $results.Put()
+        # Replacing original WMI property value from remote system
+        Write-Verbose "Replacing original WMI property value from remote system"
+        $modified_WMIObject.DebugFilePath = $Original_WMIProperty
+        $null = $modified_WMIObject.Put()
 
         Write-Verbose "Done!"
     }

@@ -478,12 +478,6 @@ function Get-InstalledPrograms
 
     Process
     {
-        $fullregistrypath = "HKLM:\Software\Microsoft\Windows"
-        $registrydownname = -join ((65..90) + (97..122) | Get-Random -Count 5 | % {[char]$_})
-        # The reghive value is for hkey_local_machine
-        $reghive = 2147483650
-        $regpath = "SOFTWARE\Microsoft\Windows"
-        $SystemHostname = Get-WMIObject Win32_ComputerSystem | Select-Object -ExpandProperty name
 
         if(!$Target)
         {
@@ -522,16 +516,17 @@ function Get-InstalledPrograms
             Write-Verbose "Polling property to see if the script has completed"
             if($Creds)
             {
-                $modified_WMIObject = (Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target -Credential $Creds).DebugFilePath
+                $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target -Credential $Creds
             }
             else
             {
-                $modified_WMIObject = (Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target).DebugFilePath
+                $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target
             }
             
-            if(!$modified_WMIObject)
+            $Original_WMIProperty
+            try 
             {
-                if($Original_WMIProperty -match  $modified_WMIObject)
+                if($Original_WMIProperty -match  $modified_WMIObject.DebugFilePath)
                 {
                     Write-Verbose "Script is not done, sleeping for 5 and trying again"
                     Start-Sleep -s 5
@@ -542,21 +537,22 @@ function Get-InstalledPrograms
                     $quit = $true
                 }
             }
-            else
+            catch
             {
                 Write-Verbose "Script is not done, sleeping for 5 and trying again"
                 Start-Sleep -s 5
             }
+            
         }
     
-        $decode = [char[]][int[]]$modified_WMIObject.Split(',') -Join ''
+        $decode = [char[]][int[]]$modified_WMIObject.DebugFilePath.Split(',') -Join ''
         # Print to console
         $decode
 
         # Replacing original WMI property value from remote system
         Write-Verbose "Replacing original WMI property value from remote system"
 
-        $modified_WMIObject = $Original_WMIProperty
+        $modified_WMIObject.DebugFilePath = $Original_WMIProperty
         $null = $modified_WMIObject.Put()
         
         Write-Verbose "Done!"

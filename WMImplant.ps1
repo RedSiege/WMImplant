@@ -4180,7 +4180,7 @@ function Invoke-FileTransferWMImplant
                 Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -ObfuscateWithEnvVar
             }
 
-            Write-Verbose "Done!"
+            Write-Verbose "Remote system now is copying file from WMI property and replacing it to the original value."
         }
     } # End of Process Block
     end{}

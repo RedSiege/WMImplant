@@ -675,18 +675,18 @@ Path to save output to
 
         if($Creds)
         {
-            $temp = Get-WmiObject -Credential $Creds -computername $Target -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+10" | Select-String "Logon Process:\s+User32"}
+            $temp = Get-WmiObject -Credential $Creds -computername $Target -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+(2|10)" | Select-String "Logon Process:\s+User32"}
         }
 
         else
         {
-            $temp = Get-WmiObject -computername $Target -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+10" | Select-String "Logon Process:\s+User32"}
+            $temp = Get-WmiObject -computername $Target -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+(2|10)" | Select-String "Logon Process:\s+User32"}
         }
 
         $temp2 = @()
         ForEach ($line in $temp)
         {
-            $temp2 = $line.Message -split '[\r\n]' | Select-String -pattern "workstation name:", "account name:", "source network address:"
+            $temp2 += $line.Message -split '[\r\n]' | Select-String -pattern "workstation name:", "account name:", "source network address:"
         }
 
         $result = $temp2 | Select-String -pattern "workstation name:", "account name:", "source network address:"; 

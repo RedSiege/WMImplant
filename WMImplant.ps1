@@ -126,28 +126,16 @@ function Find-CurrentUsers
     (
         [Parameter(Mandatory = $False)]
         [System.Management.Automation.PSCredential]$Creds,
-        [Parameter(Mandatory = $False)]
+        [Parameter(Mandatory = $True)]
         [string]$ComputerName
     )
 
     Process
     {
-        if(!$ComputerName)
-        {
-            $ComputerName = Read-Host "What system are you targeting? >"
-            $ComputerName = $ComputerName.Trim()
-        }
 
-        Write-Verbose "Connecting to $ComputerName"
+        Write-Verbose "Connecting to $PSBoundParameters.ComputerName"
 
-        if($Creds)
-        {
-            $system_process_accounts = Get-WMIObject Win32_Process -Credential $Creds -ComputerName $ComputerName | ForEach { $owner = $_.GetOwner(); '{0}\{1}' -f $owner.Domain, $owner.User } | Sort-Object | Get-Unique
-        }
-        else
-        {
-            $system_process_accounts = Get-WMIObject Win32_Process -ComputerName $ComputerName | ForEach { $owner = $_.GetOwner(); '{0}\{1}' -f $owner.Domain, $owner.User } | Sort-Object | Get-Unique
-        }
+        $system_process_accounts = Get-WMIObject Win32_Process @PSBoundParameters | ForEach { $owner = $_.GetOwner(); '{0}\{1}' -f $owner.Domain, $owner.User } | Sort-Object | Get-Unique
 
         foreach($user_name in $system_process_accounts) 
         { 
@@ -678,6 +666,13 @@ function Invoke-CommandExecution
 
 function Invoke-CommandGeneration
 {
+    param
+    (
+        #Parameter assignment
+        [Parameter(Mandatory = $True)]
+        [string]$ComputerName
+    )
+
     # This function generates the command line command users would run to invoke WMImplant
     # in a non-interactive manner
     Show-WMImplantMainMenu
@@ -685,9 +680,6 @@ function Invoke-CommandGeneration
     # Read in user's menu choice
     $GenSelection = Read-Host "What is the command you'd like to run? >"
     $GenSelection = $GenSelection.Trim().ToLower()
-
-    $GenTarget = Read-Host "What system are you targeting? >"
-    $GenTarget = $GenTarget.Trim()
 
     $AnyCreds = Read-Host "Do you want to run this in the context of a different user? [yes] or [no]? >"
     $AnyCreds = $AnyCreds.Trim().ToLower()
@@ -1004,7 +996,7 @@ function Invoke-CommandGeneration
 
     if($Command -ne '')
     {
-        $Command += " -ComputerName $GenTarget"
+        $Command += " -ComputerName $ComputerName"
         if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
         {
             $Command += " -RemoteUser $GenUsername -RemotePass $GenPassword`n"
@@ -2961,6 +2953,12 @@ function Use-MenuSelection
         $menu_selection = Read-Host "Command >"
         $menu_selection = $menu_selection.Trim().ToLower()
 
+        if(($menu_selection -ne 'exit') -and ($menu_selection -ne 'change_user') -and ($menu_selection -ne 'help'))
+        {
+            $ComputerName = Read-Host "What system are you targeting? >"
+            $ComputerName = $ComputerName.Trim()
+        }
+
         switch ($menu_selection)
         {
             "change_user"
@@ -2975,7 +2973,7 @@ function Use-MenuSelection
 
             "gen_cli"
             {
-                Invoke-CommandGeneration
+                Invoke-CommandGeneration -ComputerName $ComputerName
             }
 
             "set_default"
@@ -3207,12 +3205,12 @@ function Use-MenuSelection
             {
                 if($Credential)
                 {
-                    Find-CurrentUsers -Creds $Credential
+                    Find-CurrentUsers -Creds $Credential -ComputerName $ComputerName
                 }
 
                 else
                 {
-                    Find-CurrentUsers
+                    Find-CurrentUsers -ComputerName $ComputerName
                 }
             }
 

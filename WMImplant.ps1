@@ -433,7 +433,7 @@ Path to save output to
             $accountName = ([string]($result[$i+1])).Split(":")[1].Trim(); 
             $workstationName = ([string]($result[$i+2])).Split(":")[1].Trim(); 
             $sourceAddress = ([string]($result[$i+3])).Split(":")[1].Trim(); 
-            $keyPair = "$accountName,$workstationName,$sourceAddress"; 
+            $keyPair = "$accountName,$workstationName,$sourceAddress";
             $finalResult += $keyPair 
         }
         Write-Output "User Account, System Connecting To, System Connecting From"
@@ -455,7 +455,7 @@ function Invoke-CommandExecution
         #Parameter assignment
         [Parameter(Mandatory = $False)]
         [System.Management.Automation.PSCredential]$Creds,
-        [Parameter(Mandatory = $ComputerName)]
+        [Parameter(Mandatory = $True)]
         [string]$ComputerName,
         [Parameter(Mandatory = $False)]
         [string]$ExecCommand
@@ -1874,7 +1874,7 @@ function Invoke-WMImplant
             $RemoteCredential = New-Object -Typename System.Management.Automation.PSCredential -argumentlist $RemoteUser,$RemotePassword
         }
 
-        if((!$ComputerName) -and (!$Interactive))
+        if((!$ComputerName) -and ($PSCmdlet.ParameterSetName -ne 'Interactive'))
         {
             Throw "You need to specify a target to run the command against!"
         }
@@ -2676,12 +2676,12 @@ function Use-MenuSelection
             {
                 if ($Credential)
                 {
-                    Set-OriginalProperty -Creds $Credential
+                    Set-OriginalProperty -Creds $Credential -ComputerName $ComputerName
                 }
 
                 else
                 {
-                    Set-OriginalProperty
+                    Set-OriginalProperty -ComputerName $ComputerName
                 }
             }
 
@@ -2694,12 +2694,12 @@ function Use-MenuSelection
             {
                 if ($Credential)
                 {
-                    Get-FileContentsWMImplant -Creds $Credential
+                    Get-FileContentsWMImplant -Creds $Credential -ComputerName $ComputerName
                 }
 
                 else
                 {
-                    Get-FileContentsWMImplant
+                    Get-FileContentsWMImplant -ComputerName $ComputerName
                 }
             }
 
@@ -2707,12 +2707,12 @@ function Use-MenuSelection
             {
                 if ($Credential)
                 {
-                    Invoke-FileTransferWMImplant -Creds $Credential -Download
+                    Invoke-FileTransferWMImplant -Creds $Credential -Download -ComputerName $ComputerName
                 }
 
                 else
                 {
-                    Invoke-FileTransferWMImplant -Download
+                    Invoke-FileTransferWMImplant -Download -ComputerName $ComputerName
                 }
             }
 
@@ -2720,12 +2720,12 @@ function Use-MenuSelection
             {
                 if ($Credential)
                 {
-                    Invoke-LSWMImplant -Creds $Credential
+                    Invoke-LSWMImplant -Creds $Credential -ComputerName $ComputerName
                 }
 
                 else
                 {
-                    Invoke-LSWMImplant
+                    Invoke-LSWMImplant -ComputerName $ComputerName
                 }
             }
 
@@ -2733,12 +2733,12 @@ function Use-MenuSelection
             {
                 if($Credential)
                 {
-                    Find-FileWMImplant -Creds $Credential
+                    Find-FileWMImplant -Creds $Credential -ComputerName $ComputerName
                 }
 
                 else
                 {
-                    Find-FileWMImplant    
+                    Find-FileWMImplant -ComputerName $ComputerName
                 }
 
             }
@@ -2747,12 +2747,12 @@ function Use-MenuSelection
             {
                 if ($Credential)
                 {
-                    Invoke-FileTransferWMImplant -Creds $Credential -Upload
+                    Invoke-FileTransferWMImplant -Creds $Credential -Upload -ComputerName $ComputerName
                 }
 
                 else
                 {
-                    Invoke-FileTransferWMImplant -Upload
+                    Invoke-FileTransferWMImplant -Upload -ComputerName $ComputerName
                 }
             }
 
@@ -2760,12 +2760,12 @@ function Use-MenuSelection
             {
                 if ($Credential)
                 {
-                    Invoke-CommandExecution -Creds $Credential
+                    Invoke-CommandExecution -Creds $Credential -ComputerName $ComputerName
                 }
 
                 else
                 {
-                    Invoke-CommandExecution
+                    Invoke-CommandExecution -ComputerName $ComputerName
                 }
             }
 
@@ -2773,12 +2773,12 @@ function Use-MenuSelection
             {
                 if ($Credential)
                 {
-                    Invoke-RegValueMod -Creds $Credential -KeyDelete -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential'
+                    Invoke-RegValueMod -Creds $Credential -KeyDelete -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -ComputerName $ComputerName
                 }
 
                 else
                 {
-                    Invoke-RegValueMod -KeyDelete -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential'
+                    Invoke-RegValueMod -KeyDelete -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -ComputerName $ComputerName
                 }
             }
 
@@ -2786,12 +2786,12 @@ function Use-MenuSelection
             {
                 if ($Credential)
                 {
-                    Invoke-ProcSpawn -Creds $Credential -Command 'powershell.exe -command "Disable-PSRemoting -Force"'
+                    Invoke-ProcSpawn -Creds $Credential -Command 'powershell.exe -command "Disable-PSRemoting -Force"' -ComputerName $ComputerName
                 }
 
                 else
                 {
-                    Invoke-ProcSpawn -Command 'powershell.exe -command "Disable-PSRemoting -Force"'
+                    Invoke-ProcSpawn -Command 'powershell.exe -command "Disable-PSRemoting -Force"' -ComputerName $ComputerName
                 }
             }
 
@@ -2799,12 +2799,12 @@ function Use-MenuSelection
             {
                 if ($Credential)
                 {
-                    Invoke-RegValueMod -Creds $Credential -KeyCreate -RegHive 'hklm' -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -RegValue '0x1'
+                    Invoke-RegValueMod -Creds $Credential -KeyCreate -RegHive 'hklm' -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -RegValue '0x1' -ComputerName $ComputerName
                 }
 
                 else
                 {
-                    Invoke-RegValueMod -KeyCreate -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey UseLogonCredential -RegValue "0x1"
+                    Invoke-RegValueMod -KeyCreate -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey UseLogonCredential -RegValue "0x1" -ComputerName $ComputerName
                 }
             }
 
@@ -2812,12 +2812,12 @@ function Use-MenuSelection
             {
                 if ($Credential)
                 {
-                    Invoke-ProcSpawn -Creds $Credential -Command 'powershell.exe -command "Enable-PSRemoting -Force"'
+                    Invoke-ProcSpawn -Creds $Credential -Command 'powershell.exe -command "Enable-PSRemoting -Force"' -ComputerName $ComputerName
                 }
 
                 else
                 {
-                    Invoke-ProcSpawn -Command 'powershell.exe -command "Enable-PSRemoting -Force"'
+                    Invoke-ProcSpawn -Command 'powershell.exe -command "Enable-PSRemoting -Force"' -ComputerName $ComputerName
                 }
             }
 
@@ -2825,11 +2825,11 @@ function Use-MenuSelection
             {
                 if($Credential)
                 {
-                    Invoke-RegValueMod -Creds $Credential
+                    Invoke-RegValueMod -Creds $Credential -ComputerName $ComputerName
                 }
                 else
                 {
-                    Invoke-RegValueMod
+                    Invoke-RegValueMod -ComputerName $ComputerName
                 }
             }
 
@@ -2837,12 +2837,12 @@ function Use-MenuSelection
             {
                 if ($Credential)
                 {
-                    Invoke-RemoteScriptWithOutput -Creds $Credential
+                    Invoke-RemoteScriptWithOutput -Creds $Credential -ComputerName $ComputerName
                 }
 
                 else
                 {
-                    Invoke-RemoteScriptWithOutput
+                    Invoke-RemoteScriptWithOutput -ComputerName $ComputerName
                 }
             }
 
@@ -2850,11 +2850,11 @@ function Use-MenuSelection
             {
                 if($Credential)
                 {
-                    Invoke-ServiceMod -Creds $Credential
+                    Invoke-ServiceMod -Creds $Credential -ComputerName $ComputerName
                 }
                 else
                 {
-                    Invoke-ServiceMod
+                    Invoke-ServiceMod -ComputerName $ComputerName
                 }
             }
 
@@ -2862,12 +2862,12 @@ function Use-MenuSelection
             {
                 if ($Credential)
                 {
-                    Invoke-ProcessPunisher -Creds $Credential
+                    Invoke-ProcessPunisher -Creds $Credential -ComputerName $ComputerName
                 }
 
                 else
                 {
-                    Invoke-ProcessPunisher
+                    Invoke-ProcessPunisher -ComputerName $ComputerName
                 }
             }
 
@@ -2875,12 +2875,12 @@ function Use-MenuSelection
             {
                 if ($Credential)
                 {
-                    Invoke-ProcSpawn -Creds $Credential
+                    Invoke-ProcSpawn -Creds $Credential -ComputerName $ComputerName
                 }
 
                 else
                 {
-                    Invoke-ProcSpawn
+                    Invoke-ProcSpawn -ComputerName $ComputerName
                 }
             }
 
@@ -2888,12 +2888,12 @@ function Use-MenuSelection
             {
                 if ($Credential)
                 {
-                    Get-ProcessListingWMImplant -Creds $Credential
+                    Get-ProcessListingWMImplant -Creds $Credential -ComputerName $ComputerName
                 }
 
                 else
                 {
-                    Get-ProcessListingWMImplant
+                    Get-ProcessListingWMImplant -ComputerName $ComputerName
                 }
             }
 
@@ -3064,9 +3064,9 @@ function Find-FileWMImplant
     (
         [Parameter(Mandatory = $False)]
         [System.Management.Automation.PSCredential]$Creds,
-        [Parameter(Mandatory = $False)]
-        [string]$ComputerName,
         [Parameter(Mandatory = $True)]
+        [string]$ComputerName,
+        [Parameter(Mandatory = $False)]
         [string]$File,
         [Parameter(Mandatory = $False)]
         [string]$Drive,

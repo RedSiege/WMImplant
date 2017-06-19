@@ -879,7 +879,6 @@ function Invoke-CommandGeneration
 
     if($Command -ne '')
     {
-        $Command += " -ComputerName $ComputerName"
         if(($AnyCreds -eq "yes") -or ($AnyCreds -eq "y"))
         {
             $Command += " -RemoteUser $GenUsername -RemotePass $GenPassword`n"
@@ -893,6 +892,10 @@ function Invoke-CommandGeneration
             $ComputerPath = Read-Host "What is the full path to the file containing a list of computers? >"
             $Command = $Command.Trim()
             $Command = "Get-Content $ComputerPath | $Command"
+        }
+        else
+        {
+            $Command += " -ComputerName $ComputerName"
         }
 
         # Print command

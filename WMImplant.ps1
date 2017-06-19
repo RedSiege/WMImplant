@@ -884,6 +884,17 @@ function Invoke-CommandGeneration
         {
             $Command += " -RemoteUser $GenUsername -RemotePass $GenPassword`n"
         }
+
+        # See if user is reading in computers from a file
+        $FileInput = Read-Host "Do you want to run a WMImplant against a list of computers from a file? [yes] or [no] >"
+        $FileInput = $FileInput.Trim().ToLower()
+        if(($FileInput -ceq 'y') -or ($FileInput -ceq 'yes'))
+        {
+            $ComputerPath = Read-Host "What is the full path to the file containing a list of computers? >"
+            $Command = $Command.Trim()
+            $Command = "Get-Content $ComputerPath | $Command"
+        }
+
         # Print command
         $Command
     }

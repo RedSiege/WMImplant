@@ -4,7 +4,7 @@
     Author: @ChrisTruncer
 #>
 
-function Copy-FileWMI
+function Edit-FileWMI
 {
     param
     (
@@ -15,20 +15,38 @@ function Copy-FileWMI
         [Parameter(Mandatory = $False)]
         [string]$FileLocation,
         [Parameter(Mandatory = $False)]
-        [string]$CopyLocation
+        [string]$CopyLocation,
+        [Parameter(Mandatory = $False)]
+        [switch]$Copy,
+        [Parameter(Mandatory = $False)]
+        [switch]$Delete
     )
 
     Process
     {
-        # Check for files
-        if(!$FileLocation)
+        if((!$Copy) -and (!$Delete))
         {
-            $FileLocation = Read-Host "What is the full path to the file that you would like to copy? >"
+            Throw "You need to specify if a file is going to be copied or deleted!"
         }
 
-        if(!$CopyLocation)
+        if($Copy)
         {
-            $CopyLocation = Read-Host "What is the full path to where you would like to copy the file to? >"
+            if(!$FileLocation)
+            {
+                $FileLocation = Read-Host "What is the full path to the file that you would like to copy? >"
+            }
+
+            if(!$CopyLocation)
+            {
+                $CopyLocation = Read-Host "What is the full path to where you would like to copy the file to? >"
+            }
+        }
+        else
+        {
+            if(!$FileLocation)
+            {
+                $FileLocation = Read-Host "What is the full path to the file that you would like to delete? >"
+            }
         }
 
         # Add double slashes for File to copy
@@ -44,8 +62,16 @@ function Copy-FileWMI
             $targeted_file = Get-WMIObject -Class CIM_DataFile -Filter "Name = '$FileLocation'" -ComputerName $ComputerName
         }
 
-        # Copy file to copy location
-        $targeted_file.Copy($CopyLocation)
+        if($Copy)
+        {
+            # Copy file to copy location
+            $targeted_file.Copy($CopyLocation)
+        }
+        else
+        {
+            # Delete file
+            $targeted_file.Delete()
+        }
     }
 }
 
@@ -623,6 +649,7 @@ function Invoke-CommandGeneration
     $wmimplant_commands = @{"set_default" = "`nInvoke-WMImplant -SetWMIDefault";
                             "cat" = "`nInvoke-WMImplant -Cat -RemoteFile ";
                             "copy" = "`nInvoke-WMImplant -Copy -LocalFile ";
+                            "delete" = "`nInvoke-WMImplant -Delete -LocalFile ";
                             "download" = "`nInvoke-WMImplant -Download ";
                             "ls" = "`nInvoke-WMImplant -LS -RemoteDirectory ";
                             "search" = "`nInvoke-WMImplant -Search ";
@@ -690,6 +717,13 @@ function Invoke-CommandGeneration
             $FiletoCopy = Read-Host "What's the full path to the file you'd like to copy? >"
             $CopytoLocation = Read-Host "What's the full path to where you'd like to copy the file? >"
             $Command += "$FiletoCopy -RemoteFile $CopytoLocation"
+        }
+
+        "delete"
+        {
+            $Command = $wmimplant_commands.Get_Item("delete")
+            $FiletoDelete = Read-Host "What's the full path to the file you'd like to delete? >"
+            $Command += "$FiletoDelete"
         }
 
         "download"
@@ -1828,6 +1862,8 @@ function Invoke-WMImplant
         [Parameter(Mandatory = $False, ParameterSetName='Download File')]
         [Parameter(ParameterSetName='Upload File')]
         [Parameter(ParameterSetName='Logon Events')]
+        [Parameter(ParameterSetName='Copy File')]
+        [Parameter(ParameterSetName='Delete File')]
         [string]$LocalFile,
         [Parameter(Mandatory = $False, ParameterSetName='Read File')]
         [Parameter(ParameterSetName='Upload File')]
@@ -1837,7 +1873,6 @@ function Invoke-WMImplant
         [Parameter(ParameterSetName='Copy File')]
         [string]$RemoteFile,
         [Parameter(ParameterSetName='Directory Listing')]
-        [Parameter(ParameterSetName='Copy File')]
         [string]$RemoteDirectory,
         [Parameter(Mandatory = $False, ParameterSetName='File Search Name')]
         [Parameter(ParameterSetName='File Search Extension')]
@@ -1882,9 +1917,11 @@ function Invoke-WMImplant
         [switch]$KeyDelete,
         [Parameter(Mandatory = $False, ParameterSetName='Read File')]
         [switch]$Cat,
-        [Parameter(Mandatory = $False, ParameterSetName='Download File')]
-        [switch]$Copy,
         [Parameter(Mandatory = $False, ParameterSetName='Copy File')]
+        [switch]$Copy,
+        [Parameter(Mandatory = $False, ParameterSetName='Delete File')]
+        [switch]$Delete,
+        [Parameter(Mandatory = $False, ParameterSetName='Download File')]
         [switch]$Download,
         [Parameter(Mandatory = $False, ParameterSetName='Directory Listing')]
         [switch]$LS,
@@ -1977,7 +2014,7 @@ function Invoke-WMImplant
             }
         }
 
-        if($Copy)
+        elseif($Copy)
         {
             if(!$LocalFile)
             {
@@ -1993,12 +2030,33 @@ function Invoke-WMImplant
             {
                 if($RemoteCredential)
                 {
-                    Copy-FileWMI -Credential $RemoteCredential -ComputerName $Computer -FileLocation $LocalFile -CopyLocation $RemoteFile
+                    Edit-FileWMI -Credential $RemoteCredential -ComputerName $Computer -Copy -FileLocation $LocalFile -CopyLocation $RemoteFile
                 }
 
                 else
                 {
-                    Copy-FileWMI -ComputerName $Computer -FileLocation $LocalFile -CopyLocation $RemoteFile
+                    Edit-FileWMI -Copy -ComputerName $Computer -FileLocation $LocalFile -CopyLocation $RemoteFile
+                }
+            }
+        }
+
+        elseif($Delete)
+        {
+            if(!$LocalFile)
+            {
+                Throw "You need to specify the file you want to delete with the LocalFile flag!"
+            }
+
+            Foreach($Computer in $ComputerName)
+            {
+                if($RemoteCredential)
+                {
+                    Edit-FileWMI -Credential $RemoteCredential -ComputerName $Computer -Delete -FileLocation $LocalFile
+                }
+
+                else
+                {
+                    Edit-FileWMI -ComputerName $Computer -Delete -FileLocation $LocalFile
                 }
             }
         }
@@ -2694,6 +2752,7 @@ function Show-WMImplantMainMenu
     $menu_options += "====================================================================`n"
     $menu_options += "cat - Attempt to read a file's contents`n"
     $menu_options += "copy - Copy a file from one location to another`n"
+    $menu_options += "delete - delete a file from the targeted system`n"
     $menu_options += "download - Download a file from a remote machine`n"
     $menu_options += "ls - File/Directory listing of a specific directory`n"
     $menu_options += "search - Search for a file on a user-specified drive`n"
@@ -2811,11 +2870,23 @@ function Use-MenuSelection
             {
                 if($Credential)
                 {
-                    Copy-FileWMI -Credential $Credential -ComputerName $ComputerName
+                    Edit-FileWMI -Copy -Credential $Credential -ComputerName $ComputerName
                 }
                 else
                 {
-                    Copy-FileWMI -ComputerName $ComputerName
+                    Edit-FileWMI -Copy -ComputerName $ComputerName
+                }
+            }
+
+            "delete"
+            {
+                if($Credential)
+                {
+                    Edit-FileWMI -Delete -Credential $Credential -ComputerName $ComputerName
+                }
+                else
+                {
+                    Edit-FileWMI -Delete -ComputerName $ComputerName
                 }
             }
 

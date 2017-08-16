@@ -4,6 +4,51 @@
     Author: @ChrisTruncer
 #>
 
+function Copy-FileWMI
+{
+    param
+    (
+        [Parameter(Mandatory = $False)]
+        [System.Management.Automation.PSCredential]$Credential,
+        [Parameter(Mandatory = $True)]
+        [string]$ComputerName,
+        [Parameter(Mandatory = $False)]
+        [string]$FileLocation,
+        [Parameter(Mandatory = $False)]
+        [string]$CopyLocation
+    )
+
+    Process
+    {
+        # Check for files
+        if(!$FileLocation)
+        {
+            $FileLocation = Read-Host "What is the full path to the file that you would like to copy? >"
+        }
+
+        if(!$CopyLocation)
+        {
+            $CopyLocation = Read-Host "What is the full path to where you would like to copy the file to? >"
+        }
+
+        # Add double slashes for File to copy
+        $FileLocation = $FileLocation -replace '\\', '\\'
+
+        # Make WMI Query for file to copy
+        if($Credential)
+        {
+            $targeted_file = Get-WMIObject -Class CIM_DataFile -Filter "Name = '$FileLocation'" -Credential $Credential -ComputerName $ComputerName
+        }
+        else
+        {
+            $targeted_file = Get-WMIObject -Class CIM_DataFile -Filter "Name = '$FileLocation'" -ComputerName $ComputerName
+        }
+
+        # Copy file to copy location
+        $targeted_file.Copy($CopyLocation)
+    }
+}
+
 function Invoke-WMIObfuscatedPSCommand
 {
     param
@@ -44,7 +89,7 @@ function Invoke-WMIObfuscatedPSCommand
 
             $PSCommandForCommandLine = $DGInvokeEnvVarSyntaxRandom
         }
-        Else
+        else
         {
             $PSCommandForCommandLine = $PSCommand
         }
@@ -577,6 +622,7 @@ function Invoke-CommandGeneration
     # hashmap for command generation
     $wmimplant_commands = @{"set_default" = "`nInvoke-WMImplant -SetWMIDefault";
                             "cat" = "`nInvoke-WMImplant -Cat -RemoteFile ";
+                            "copy" = "`nInvoke-WMImplant -Copy -LocalFile ";
                             "download" = "`nInvoke-WMImplant -Download ";
                             "ls" = "`nInvoke-WMImplant -LS -RemoteDirectory ";
                             "search" = "`nInvoke-WMImplant -Search ";
@@ -636,6 +682,14 @@ function Invoke-CommandGeneration
             $Command = $wmimplant_commands.Get_Item("cat")
             $FileRead = Read-Host "What's the full path to the file you'd like to read? >"
             $Command += $FileRead
+        }
+
+        "copy"
+        {
+            $Command = $wmimplant_commands.Get_Item("copy")
+            $FiletoCopy = Read-Host "What's the full path to the file you'd like to copy? >"
+            $CopytoLocation = Read-Host "What's the full path to where you'd like to copy the file? >"
+            $Command += "$FiletoCopy -RemoteFile $CopytoLocation"
         }
 
         "download"
@@ -1597,6 +1651,9 @@ function Invoke-WMImplant
     .PARAMETER Cat
     This parameter specifies that WMImplant will read the contents of the specified file.
 
+    .PARAMETER Copy
+    This parameter specifies that WMImplant will copy a file from one location to another.
+
     .PARAMETER Download
     This parameter specifies that WMImplant will download a specified file.
 
@@ -1777,8 +1834,10 @@ function Invoke-WMImplant
         [Parameter(ParameterSetName='Download File')]
         [Parameter(ParameterSetName='File Search Name')]
         [Parameter(ParameterSetName='Process Start')]
+        [Parameter(ParameterSetName='Copy File')]
         [string]$RemoteFile,
         [Parameter(ParameterSetName='Directory Listing')]
+        [Parameter(ParameterSetName='Copy File')]
         [string]$RemoteDirectory,
         [Parameter(Mandatory = $False, ParameterSetName='File Search Name')]
         [Parameter(ParameterSetName='File Search Extension')]
@@ -1824,6 +1883,8 @@ function Invoke-WMImplant
         [Parameter(Mandatory = $False, ParameterSetName='Read File')]
         [switch]$Cat,
         [Parameter(Mandatory = $False, ParameterSetName='Download File')]
+        [switch]$Copy,
+        [Parameter(Mandatory = $False, ParameterSetName='Copy File')]
         [switch]$Download,
         [Parameter(Mandatory = $False, ParameterSetName='Directory Listing')]
         [switch]$LS,
@@ -1912,6 +1973,32 @@ function Invoke-WMImplant
                 else
                 {
                     Get-FileContentsWMImplant -ComputerName $Computer -File $RemoteFile
+                }
+            }
+        }
+
+        if($Copy)
+        {
+            if(!$LocalFile)
+            {
+                Throw "You need to specify the file you want to copy with the LocalFile flag!"
+            }
+            
+            if(!$RemoteFile)
+            {
+                Throw "You need to specify where the file should be copied to with the RemoteFile flag!"
+            }
+
+            Foreach($Computer in $ComputerName)
+            {
+                if($RemoteCredential)
+                {
+                    Copy-FileWMI -Credential $RemoteCredential -ComputerName $Computer -FileLocation $LocalFile -CopyLocation $RemoteFile
+                }
+
+                else
+                {
+                    Copy-FileWMI -ComputerName $Computer -FileLocation $LocalFile -CopyLocation $RemoteFile
                 }
             }
         }
@@ -2606,6 +2693,7 @@ function Show-WMImplantMainMenu
     $menu_options += "File Operations`n"
     $menu_options += "====================================================================`n"
     $menu_options += "cat - Attempt to read a file's contents`n"
+    $menu_options += "copy - Copy a file from one location to another`n"
     $menu_options += "download - Download a file from a remote machine`n"
     $menu_options += "ls - File/Directory listing of a specific directory`n"
     $menu_options += "search - Search for a file on a user-specified drive`n"
@@ -2716,6 +2804,18 @@ function Use-MenuSelection
                 else
                 {
                     Get-FileContentsWMImplant -ComputerName $ComputerName
+                }
+            }
+
+            "copy"
+            {
+                if($Credential)
+                {
+                    Copy-FileWMI -Credential $Credential -ComputerName $ComputerName
+                }
+                else
+                {
+                    Copy-FileWMI -ComputerName $ComputerName
                 }
             }
 

@@ -16,6 +16,7 @@ Developed by [@christruncer](https://twitter.com/christruncer)
 
 ## File Operations
     cat                                 -   Reads the contents of a file
+    copy                                -   Copies a file from one location to another
     download                            -   Download a file from the targeted machine
     ls                                  -   File/Directory listing of a specific directory
     search                              -   Search for a file on a user-specified drive

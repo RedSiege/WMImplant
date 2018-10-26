@@ -441,7 +441,7 @@ function Get-ProcessListingWMImplant
     {
         Write-Verbose "Connecting to $ComputerName"
 
-        Get-WMIObject Win32_Process @PSBoundParameters | ForEach-Object { $_.ProcessName } | Sort-Object | Get-Unique
+        Get-WMIObject Win32_Process @PSBoundParameters | ForEach-Object { $_.ProcessName, $_.ProcessID }
     }
 }
 
